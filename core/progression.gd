@@ -20,7 +20,7 @@ signal toast(text: String)
 
 const DAILY_SLOTS := 6
 const WEEKLY_SLOTS := 5
-const TRACK_TIERS := 20
+const TRACK_TIERS := 30
 const TIER_COST := 10
 const POOL_VERSION := 2
 
@@ -314,8 +314,11 @@ func add_points(amount: int) -> void:
         track_changed.emit()
 
 
-## Тип сундука ступени: wood / military / science / gold (каждая 5-я - золото).
+## Тип сундука ступени: wood / military / science / gold / black.
+## Золотые - каждая 5-я, чёрные ящики - милстоуны 10/20/30.
 func chest_kind(tier: int) -> String:
+        if tier % 10 == 0:
+                return "black"
         if tier % 5 == 0:
                 return "gold"
         var order := ["wood", "military", "science", "wood"]
@@ -324,6 +327,7 @@ func chest_kind(tier: int) -> String:
 
 func chest_name(kind: String) -> String:
         match kind:
+                "black": return "ЧЁРНЫЙ ЯЩИК"
                 "gold": return "ЗОЛОТОЙ СУНДУК"
                 "military": return "ВОЕННЫЙ СУНДУК"
                 "science": return "НАУЧНЫЙ СУНДУК"
@@ -332,37 +336,45 @@ func chest_name(kind: String) -> String:
 
 func chest_color(kind: String) -> Color:
         match kind:
+                "black": return Color("b48cff")
                 "gold": return Color("ffd23f")
                 "military": return Color("9aa89a")
                 "science": return Color("6fc4ff")
                 _: return Color("c9803a")
 
 
-## Содержимое сундука ступени (с учётом цикла трека).
+## Содержимое сундука ступени: цикл трека (x1.25 за цикл) + сезонный рост
+## (к концу трека сундуки жирнее до +50%). Чёрные ящики - джекпот милстоунов.
 func chest_contents(tier: int) -> Dictionary:
         var kind := chest_kind(tier)
         var mult: float = 1.0 + 0.25 * float(track_cycle() - 1)
+        var season: float = 1.0 + 0.5 * float(tier - 1) / float(maxi(1, TRACK_TIERS - 1))
         var bio := 0
         var mut := 0
         var ano := 0
         match kind:
+                "black":
+                        bio = 600
+                        mut = 3
+                        ano = 3
                 "gold":
                         bio = 400
                         mut = 2
                         ano = 2
                 "military":
+                        bio = 100
                         mut = 2
                 "science":
-                        bio = 120
+                        bio = 140
                         ano = 2
                 _:
-                        bio = 220
+                        bio = 200
                         ano = 1
         return {
                 "kind": kind,
-                "biomass": int(round(bio * mult)),
-                "mutant_rolls": int(ceil(mut * mult)),
-                "anomaly_rolls": int(ceil(ano * mult)),
+                "biomass": int(round(float(bio) * mult * season)),
+                "mutant_rolls": int(ceil(float(mut) * mult * season)),
+                "anomaly_rolls": int(ceil(float(ano) * mult * season)),
         }
 
 

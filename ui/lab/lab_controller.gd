@@ -4062,7 +4062,7 @@ func _rebuild_tasks_lists():
         _tasks_section("НЕДЕЛЬНЫЕ · обновятся в понедельник")
         for t in Prog.weekly_tasks():
                 _tasks_lists_box.add_child(_make_task_row("w", t))
-        var note := BunkerUI.make_mono_label("Любой бой даёт опыт и очки трека. Уровень растёт — сундук жирнее.", 12, BunkerUI.TEXT_FAINT)
+        var note := BunkerUI.make_mono_label("Любой бой даёт опыт и очки трека. Сезон: 30 ступеней — сундуки жирнее к концу трека, ЧЁРНЫЙ ЯЩИК на 10/20/30.", 12, BunkerUI.TEXT_FAINT)
         _tasks_lists_box.add_child(note)
 
 
