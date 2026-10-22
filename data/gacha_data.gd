@@ -9,6 +9,11 @@ class_name GachaData
 
 const CHIMERA_GUARANTEE_LEVEL: int = 50
 
+# СУПЕР-ГАЧА: каждые 60 обычных круток (мутанты + артефакты в сумме) дают
+# 1 супер-крутку. Супер-призыв бьёт ТОЛЬКО по эксклюзивам Чёрных ящиков -
+# тем, которых в обычной гаче не достать. Пока собраны не все - гарантия нового.
+const SUPER_PITY := 60
+
 # ГЕЙТИНГ КОЛЛЕКЦИИ: пока тип не разблокирован, применить его в бою нельзя.
 # На старте доступны только слабейшие; кампания открывает остальных на 1 звезду.
 # Химера вне таблицы - джекпот гачи с гарантией на уровне 50.
@@ -409,6 +414,24 @@ static func roll_artifact_gacha(level: int) -> Dictionary:
         var type: String = types[randi() % types.size()]
         var bonus: Array = ARTIFACT_BONUS[rarity]
         return {"type": type, "rarity": rarity, "energy": bonus[0], "biomass": bonus[1]}
+
+
+## СУПЕР-ПРИЗЫВ: случайный эксклюзив Чёрного ящика (мутант или аномалия).
+## Пока в коллекции есть неполученные - гарантированно НОВЫЙ; когда все шесть
+## собраны - случайный дубль (мутант -> копия на ферму, аномалия -> биомасса).
+static func roll_super_gacha(owned_mutants: Array, owned_anomalies: Array) -> Dictionary:
+        var entries: Array = []
+        for ex in EXCLUSIVE_MUTANTS:
+                entries.append({"kind": "mut", "type": str(ex["type"]), "owned": owned_mutants.has(str(ex["type"]))})
+        for ax in EXCLUSIVE_ANOMALIES:
+                entries.append({"kind": "art", "type": str(ax["type"]), "owned": owned_anomalies.has(str(ax["type"]))})
+        var fresh: Array = []
+        for e in entries:
+                if not bool(e["owned"]):
+                        fresh.append(e)
+        var pool: Array = fresh if not fresh.is_empty() else entries
+        var pick: Dictionary = pool[randi() % pool.size()]
+        return {"kind": str(pick["kind"]), "type": str(pick["type"]), "rarity": "legendary"}
 
 
 static func milestone_wave_reward(waves: int) -> Dictionary:

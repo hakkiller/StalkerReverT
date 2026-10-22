@@ -364,6 +364,11 @@ func spin_mutant_gacha(times: int) -> Array:
                         lab.unlocked_mutants.append(roll["type"])
                         roll["status"] = "new"
                 results.append(roll)
+                # Супер-бонус: каждая обычная крутка приближает супер-крутку
+                lab.super_pull_progress += 1
+                if lab.super_pull_progress >= GachaData.SUPER_PITY:
+                        lab.super_pull_progress = 0
+                        lab.super_pulls += 1
         lab.gacha_rolls_mutants -= times
         pass # print("Гача мутантов: %d круток (ур. %d), осталось %d" % [times, level, lab.gacha_rolls_mutants])
         save_to_active_slot()
@@ -396,8 +401,46 @@ func spin_artifact_gacha(times: int) -> Array:
                 # энергия - в копилку забега (учитывается в параметрах запуска)
                 lab.biomass += float(roll.get("biomass", 0.0))
                 results.append(roll)
+                # Супер-бонус: каждая обычная крутка приближает супер-крутку
+                lab.super_pull_progress += 1
+                if lab.super_pull_progress >= GachaData.SUPER_PITY:
+                        lab.super_pull_progress = 0
+                        lab.super_pulls += 1
         lab.gacha_rolls_artifacts -= times
         pass # print("Гача артефактов: %d круток (ур. %d), осталось %d" % [times, level, lab.gacha_rolls_artifacts])
+        save_to_active_slot()
+        return results
+
+
+## СУПЕР-ПРИЗЫВ: тратит супер-крутки, бьёт ТОЛЬКО по эксклюзивам Чёрных
+## ящиков (3 мутанта + 3 аномалии). Гарантия нового - в roll_super_gacha.
+## Дубль мутанта -> копия на ферму, дубль аномалии -> +400 биомассы.
+func spin_super_gacha(times: int) -> Array:
+        var results: Array = []
+        if times <= 0 or not current_save_data or not current_save_data.lab_data:
+                return results
+        var lab = current_save_data.lab_data
+        times = mini(times, int(lab.super_pulls))
+        if times <= 0:
+                return results
+        for _i in range(times):
+                var roll: Dictionary = GachaData.roll_super_gacha(lab.unlocked_mutants, lab.exclusive_anomalies)
+                if str(roll["kind"]) == "mut":
+                        if lab.unlocked_mutants.has(str(roll["type"])):
+                                lab.add_farm_copy(str(roll["type"]))
+                                roll["status"] = "dup"
+                        else:
+                                lab.unlocked_mutants.append(str(roll["type"]))
+                                roll["status"] = "new"
+                else:
+                        if lab.exclusive_anomalies.has(str(roll["type"])):
+                                roll["status"] = "dup"
+                                lab.biomass += 400.0
+                        else:
+                                lab.exclusive_anomalies.append(str(roll["type"]))
+                                roll["status"] = "new"
+                results.append(roll)
+        lab.super_pulls -= times
         save_to_active_slot()
         return results
 

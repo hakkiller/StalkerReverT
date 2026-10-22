@@ -9,8 +9,8 @@ extends Control
 ## (исключена до ур.30, гарантия ур.50), дубликаты, бонусы артефактов.
 
 const RAR_ORDER := ["common", "uncommon", "rare", "legendary"]
-const RAR_RU := {"common": "ОБЫЧНЫЙ", "uncommon": "НЕОБЫЧНЫЙ", "rare": "РЕДКИЙ", "legendary": "ЛЕГЕНДАРНЫЙ"}
-const RAR_SHORT := {"common": "ОБЫЧНЫЙ", "uncommon": "НЕОБЫЧНЫЙ", "rare": "РЕДКИЙ", "legendary": "ЛЕГЕНДА"}
+const RAR_RU := {"common": "ОБЫЧНЫЙ", "uncommon": "НЕОБЫЧНЫЙ", "rare": "РЕДКИЙ", "legendary": "ЛЕГЕНДАРНЫЙ", "ex": "ЭКСКЛЮЗИВ"}
+const RAR_SHORT := {"common": "ОБЫЧНЫЙ", "uncommon": "НЕОБЫЧНЫЙ", "rare": "РЕДКИЙ", "legendary": "ЛЕГЕНДА", "ex": "ЭКСКЛЮЗИВ"}
 
 var _arm: String = "mutants"
 var _arm_buttons: Dictionary = {}
@@ -112,9 +112,9 @@ func _build_header() -> void:
         arms.alignment = BoxContainer.ALIGNMENT_CENTER
         arms.size_flags_horizontal = Control.SIZE_EXPAND_FILL
         arms.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-        for arm in ["mutants", "artifacts"]:
+        for arm in ["mutants", "artifacts", "super"]:
                 var tab := Button.new()
-                tab.custom_minimum_size = Vector2(250, 56)
+                tab.custom_minimum_size = Vector2(190, 56)
                 BunkerUI.style_button(tab, "steel", 17)
                 tab.pressed.connect(_on_arm_pressed.bind(arm))
                 tab.mouse_entered.connect(_play_hover_sound)
@@ -373,6 +373,12 @@ func _collection_types() -> Array:
 ## Витрина пула рукава: 12 позиций, легендарки первыми
 func _showcase_items() -> Array:
         var out: Array = []
+        if _arm == "super":
+                for ex in GachaData.EXCLUSIVE_MUTANTS:
+                        out.append(["mut", str(ex["type"]), "ex"])
+                for ax in GachaData.EXCLUSIVE_ANOMALIES:
+                        out.append(["art", str(ax["type"]), "ex"])
+                return out
         if _arm == "mutants":
                 for rarity in ["legendary", "rare", "uncommon", "common"]:
                         for e in GachaData.MUTANT_POOL[rarity]:
@@ -389,7 +395,7 @@ func _showcase_items() -> Array:
 func _make_strip(kind: String, type: String, rar: String, stars: int, status: String = "") -> Control:
         """Карточная полоса призыва: свечение редкости, тег редкости, буква, звёзды, имя"""
         var is_mut := kind == "mut"
-        var col: Color = BunkerUI.RARHEX.get(rar, BunkerUI.TEXT)
+        var col: Color = Color("b48cff") if rar == "ex" else BunkerUI.RARHEX.get(rar, BunkerUI.TEXT)
         var owned := stars > 0
 
         var strip := Panel.new()
@@ -402,6 +408,7 @@ func _make_strip(kind: String, type: String, rar: String, stars: int, status: St
         var glow_power := 0.0
         match rar:
                 "legendary": glow_power = 40.0
+                "ex": glow_power = 40.0
                 "rare": glow_power = 22.0
                 "uncommon": glow_power = 10.0
         if owned:
@@ -465,6 +472,7 @@ func _make_strip(kind: String, type: String, rar: String, stars: int, status: St
         if stars < 0:
                 match rar:
                         "legendary": shown = 3
+                        "ex": shown = 3
                         "rare": shown = 2
                         _: shown = 1
         if shown > 0:
@@ -488,6 +496,19 @@ func _make_strip(kind: String, type: String, rar: String, stars: int, status: St
         return strip
 
 
+## Звёзды витрины для любых типов: эксклюзивные аномалии живут в
+## exclusive_anomalies (не в won_artifacts) - единая точка проверки владения.
+func _owned_stars(kind: String, type: String, lab) -> int:
+        if lab == null:
+                return -1
+        if kind == "mut":
+                if lab.unlocked_mutants.has(type):
+                        return lab.get_mutant_stars(type)
+        elif lab.won_artifacts.has(type) or lab.exclusive_anomalies.has(type):
+                return lab.get_artifact_stars(type)
+        return -1
+
+
 func _refresh_strips() -> void:
         for c in _strips_row1.get_children():
                 _strips_row1.remove_child(c)
@@ -501,27 +522,15 @@ func _refresh_strips() -> void:
         if _session_drops.is_empty():
                 # Витрина пула: 12 позиций, звёзды «по редкости» (stars = -1)
                 for item in _showcase_items().slice(0, 12):
-                        var stars := -1
-                        if lab:
-                                if item[0] == "mut" and lab.unlocked_mutants.has(item[1]):
-                                        stars = lab.get_mutant_stars(item[1])
-                                elif item[0] == "art" and lab.won_artifacts.has(item[1]):
-                                        stars = lab.get_artifact_stars(item[1])
-                        rows[0].append([item[0], item[1], item[2], stars, ""])
+                        rows[0].append([item[0], item[1], item[2], _owned_stars(item[0], item[1], lab), ""])
         else:
                 for r in _session_drops.slice(0, 12):
-                        rows[0].append(["mut" if str(r.get("arm", "mutants")) == "mutants" else "art",
-                                str(r.get("type", "")), str(r.get("rarity", "common")), -2, str(r.get("status", ""))])
+                        var dkind: String = str(r.get("kind", "mut" if str(r.get("arm", "mutants")) == "mutants" else "art"))
+                        rows[0].append([dkind, str(r.get("type", "")), str(r.get("rarity", "common")), -2, str(r.get("status", ""))])
                 # Реальные звёзды дропов
                 var fixed: Array = []
                 for item in rows[0]:
-                        var s := -1
-                        if lab:
-                                if item[0] == "mut" and lab.unlocked_mutants.has(item[1]):
-                                        s = lab.get_mutant_stars(item[1])
-                                elif item[0] == "art" and lab.won_artifacts.has(item[1]):
-                                        s = lab.get_artifact_stars(item[1])
-                        fixed.append([item[0], item[1], item[2], s, item[4]])
+                        fixed.append([item[0], item[1], item[2], _owned_stars(item[0], item[1], lab), item[4]])
                 rows[0] = fixed
 
         # Второй ряд: если дропов мало — добираем витриной пула
@@ -535,13 +544,7 @@ func _refresh_strips() -> void:
                                 break
                         if used.has(item[1]):
                                 continue
-                        var stars := -1
-                        if lab:
-                                if item[0] == "mut" and lab.unlocked_mutants.has(item[1]):
-                                        stars = lab.get_mutant_stars(item[1])
-                                elif item[0] == "art" and lab.won_artifacts.has(item[1]):
-                                        stars = lab.get_artifact_stars(item[1])
-                        rows[1].append([item[0], item[1], item[2], stars, ""])
+                        rows[1].append([item[0], item[1], item[2], _owned_stars(item[0], item[1], lab), ""])
         else:
                 for item in rows[0].slice(6, 12):
                         rows[1].append(item)
@@ -571,24 +574,26 @@ func _refresh_header() -> void:
         var jack_line := "джекпот: Химера · гарантия на 50-м уровне · хранилище %d/%d · дубликаты идут в копии и звёзды" % [unlocked, GachaData.total_collection_size()]
         if _arm == "artifacts":
                 jack_line = "артефактный рукав · бонусы энергии и биомассы · хранилище %d/28" % unlocked
+        if _arm == "super":
+                jack_line = "супер-призыв: ТОЛЬКО эксклюзивы Чёрных ящиков · гарантия нового, пока собраны не все · хранилище %d/%d" % [unlocked, GachaData.total_collection_size()]
         _jackpot_line.text = jack_line
 
 
 func _refresh_arms() -> void:
         var lab = _lab()
-        for arm in ["mutants", "artifacts"]:
+        for arm in ["mutants", "artifacts", "super"]:
             if _arm_buttons.has(arm):
                 var tab: Button = _arm_buttons[arm]
                 var is_on: bool = arm == _arm
                 var cnt: Label = _arm_counts[arm]
-                var n: int = lab.gacha_rolls_mutants if arm == "mutants" else lab.gacha_rolls_artifacts
+                var n: int = lab.super_pulls if arm == "super" else (lab.gacha_rolls_mutants if arm == "mutants" else lab.gacha_rolls_artifacts)
                 cnt.text = "x" + _rolls_text(n)
                 cnt.add_theme_color_override("font_color", BunkerUI.GREEN if is_on else BunkerUI.TEXT_DIM)
                 var sb: StyleBoxFlat = tab.get_theme_stylebox("normal")
                 if sb:
                         sb.border_color = BunkerUI.HAZARD if is_on else BunkerUI.STEEL_EDGE
         if _rolls_plate_value and lab:
-                var n2: int = lab.gacha_rolls_mutants if _arm == "mutants" else lab.gacha_rolls_artifacts
+                var n2: int = lab.super_pulls if _arm == "super" else (lab.gacha_rolls_mutants if _arm == "mutants" else lab.gacha_rolls_artifacts)
                 _rolls_plate_value.text = _rolls_text(n2)
 
 
@@ -596,10 +601,15 @@ func _refresh_bottom() -> void:
         var lab = _lab()
         var rolls := 0
         if lab:
-                rolls = lab.gacha_rolls_mutants if _arm == "mutants" else lab.gacha_rolls_artifacts
+                rolls = lab.super_pulls if _arm == "super" else (lab.gacha_rolls_mutants if _arm == "mutants" else lab.gacha_rolls_artifacts)
         _spin1_btn.disabled = rolls < 1
         _spin10_btn.disabled = rolls < 1
-        if _arm == "mutants":
+        _spin1_btn.text = "СУПЕР-ПРИЗЫВ  ×1" if _arm == "super" else "ПРИЗЫВ  ×1"
+        _spin10_btn.text = "СУПЕР-ПРИЗЫВ  ×10" if _arm == "super" else "ПРИЗЫВ  ×10"
+        var prog: int = int(lab.super_pull_progress) if lab else 0
+        if _arm == "super":
+                _tries_label.text = "Супер-крутки: %d · бонус обычных призывов: %d/%d" % [rolls, prog, GachaData.SUPER_PITY]
+        elif _arm == "mutants":
                 var to_guarantee: int = maxi(GachaData.CHIMERA_GUARANTEE_LEVEL - _level(), 0)
                 if to_guarantee > 0:
                         _tries_label.text = "Попытки: %s · до гаранта Химеры ещё %d ур." % [_rolls_text(rolls), to_guarantee]
@@ -610,7 +620,9 @@ func _refresh_bottom() -> void:
 
         # Шансы
         var w := GachaData.rarity_weights(_level())
-        if _arm == "mutants":
+        if _arm == "super":
+                _chances_label.text = "пул: 3 эксклюзивных мутанта + 3 эксклюзивные аномалии\n+1 супер-крутка за каждые %d обычных призывов" % GachaData.SUPER_PITY
+        elif _arm == "mutants":
                 _chances_label.text = "шансы: %d%% обычный · %d%% необычный · %d%% редкий · %d%% легенда\n+1 крутка за 10-ю и 30-ю волну выживания" % [
                         roundi(w["common"]), roundi(w["uncommon"]), roundi(w["rare"]), roundi(w["legendary"])]
         else:
@@ -684,7 +696,8 @@ func _on_arm_pressed(arm: String) -> void:
         _play_click_sound()
         if _arm == arm:
                 return
-        var dir: int = 1 if arm == "artifacts" else -1   # АРТЕФАКТЫ правее МУТАНТОВ
+        var arm_order := ["mutants", "artifacts", "super"]
+        var dir: int = 1 if arm_order.find(arm) > arm_order.find(_arm) else -1   # СУПЕР правее АРТЕФАКТОВ
         _arm = arm
         _session_drops.clear()
         _refresh_all()
@@ -700,11 +713,11 @@ func _on_swipe_gui(event: InputEvent) -> void:
         elif event is InputEventMouseMotion and _swipe_active:
                 var dx: float = event.position.x - _swipe_pos.x
                 if absf(dx) >= SWIPE_THRESHOLD:
-                        _swipe_active = false   # один жест = одна смена (рукава всего два)
-                        var cur: int = 0 if _arm == "mutants" else 1
-                        var nxt: int = clampi(cur + (1 if dx < 0.0 else -1), 0, 1)   # влево = вперёд
-                        if nxt != cur:
-                                _on_arm_pressed("mutants" if nxt == 0 else "artifacts")
+                        _swipe_active = false   # один жест = одна смена
+                        var arm_order := ["mutants", "artifacts", "super"]
+                        var nxt: int = clampi(arm_order.find(_arm) + (1 if dx < 0.0 else -1), 0, 2)   # влево = вперёд
+                        if nxt != arm_order.find(_arm):
+                                _on_arm_pressed(arm_order[nxt])
 
 
 func _animate_strips(dir: int) -> void:
@@ -729,23 +742,42 @@ func _on_spin(times: int) -> void:
         if not _game_manager:
                 return
         var results: Array = []
-        if _arm == "mutants":
+        var lab = _lab()
+        var super_before: int = int(lab.super_pulls) if lab else 0
+        if _arm == "super":
+                results = _game_manager.spin_super_gacha(times)
+        elif _arm == "mutants":
                 results = _game_manager.spin_mutant_gacha(times)
         else:
                 results = _game_manager.spin_artifact_gacha(times)
         if results.is_empty():
-                _show_toast(Loc.t("gacha.no_rolls"))
+                _show_toast(Loc.t("gacha.super_no_pulls") if _arm == "super" else Loc.t("gacha.no_rolls"))
                 return
         # Дропы разворачиваются новыми полосами (новые — первыми)
         for r in results:
-                _session_drops.push_front({"arm": _arm, "type": r.get("type"), "rarity": r.get("rarity"), "status": r.get("status", "")})
+                var kind: String = str(r.get("kind", "mut"))
+                if _arm == "mutants":
+                        kind = "mut"
+                elif _arm == "artifacts":
+                        kind = "art"
+                var rar: String = str(r.get("rarity", "common"))
+                if _arm == "super":
+                        rar = "ex"   # фиолетовая рамка и тег «ЭКСКЛЮЗИВ» на полосе
+                _session_drops.push_front({"arm": _arm, "kind": kind, "type": r.get("type"), "rarity": rar, "status": r.get("status", "")})
         while _session_drops.size() > 12:
                 _session_drops.pop_back()
 
-        # Прогрессия: задачи и опыт за призыв
-        Prog.notify_gacha(times)
+        # Прогрессия: задачи и опыт за призыв (супер-призыв — награда, без прогрессии)
+        if _arm != "super":
+                Prog.notify_gacha(times)
 
         _refresh_all()
+        # Тост: заработанная супер-крутка важнее легендарки
+        var lab2 = _lab()
+        var super_earned: bool = lab2 != null and int(lab2.super_pulls) > super_before
+        if super_earned:
+                _show_toast("СУПЕР-КРУТКА +1 · ВКЛАДКА «СУПЕР»")
+                return
         # Мигнуть тостом при легендарке
         var any_legend := false
         for r in results:

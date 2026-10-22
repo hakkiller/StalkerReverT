@@ -78,6 +78,10 @@ var campaign_level_reached: int = 1
 # аномалийные крутки - серьёзная валюта (30-й уровень/30 волн = +10), дефолт 0.
 @export var gacha_rolls_mutants: int = 1000000
 @export var gacha_rolls_artifacts: int = 0
+# Супер-гача: прогресс бонуса обычных круток и доступные супер-крутки
+# (каждые GachaData.SUPER_PITY обычных призывов = +1 супер-крутка).
+@export var super_pull_progress: int = 0
+@export var super_pulls: int = 0
 
 # Хранилище артефактов
 @export var artifacts_common: Array[Dictionary] = []
@@ -509,6 +513,8 @@ func reset():
     mutant_star_progress.clear()
     star_feed_progress.clear()
     recycle_points = 0
+    super_pull_progress = 0
+    super_pulls = 0
     exclusive_anomalies.clear()
     loadout_anomalies.clear()
     loadout_mutants.clear()
