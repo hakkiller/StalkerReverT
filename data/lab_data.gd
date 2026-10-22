@@ -54,6 +54,10 @@ var campaign_level_reached: int = 1
 
 # Очки утилизации копий (10 очков = 1 крутка артефактов)
 @export var recycle_points: int = 0
+## Очки сезона (v0.19.0 «БАЗАР»): победы арены (+5 вызов / +10 оборона),
+## сезонные задачи и медали, пережитые выбросы (+3). Тратятся во вкладке
+## СЕЗОН магазина, обмениваются в ОБМЕННИКЕ (артефакты выбросов, биомасса).
+@export var season_points: int = 0
 
 # АРЕНА ВЫЖИВАНИЯ: победы в вызовах / удержанные обороны + защитный отряд
 # (мутанты, которые держат арену, пока игрок в вылазке)
@@ -513,6 +517,7 @@ func reset():
     mutant_star_progress.clear()
     star_feed_progress.clear()
     recycle_points = 0
+    season_points = 0
     super_pull_progress = 0
     super_pulls = 0
     exclusive_anomalies.clear()

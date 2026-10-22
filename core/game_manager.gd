@@ -472,6 +472,111 @@ func feed_fodder(fodder_type: String, target_type: String) -> String:
         return "Простой корм принят: %d/%d" % [progress, need]
 
 
+## ===== МАГАЗИН СЕЗОНА (v0.19.0 «БАЗАР») =====
+## Покупка за очки сезона (СП): эксклюзивы Чёрных ящиков, крутки, биомасса, копии.
+func season_spend(points: int) -> bool:
+        var lab = get_lab_data()
+        if lab == null or lab.season_points < points:
+                return false
+        lab.season_points -= points
+        save_to_active_slot()
+        return true
+
+
+func _season_price(kind: String, type: String = "") -> int:
+        for e in GachaData.SEASON_SHOP:
+                if str(e[0]) == kind and (type == "" or str(e[1]) == type):
+                        return int(e[3])
+        return 0
+
+
+func buy_season_exclusive(kind: String, type: String) -> Dictionary:
+        """Эксклюзив за СП: новый -> коллекция, дубликат -> копия/+400 био (как ЧЯ)"""
+        var price := _season_price(kind, type)
+        if price <= 0 or get_lab_data() == null:
+                return {}
+        if not season_spend(price):
+                return {}
+        var res: Dictionary = {}
+        if kind == "ex_mut":
+                res = grant_exclusive_mutant(type)
+        else:
+                res = grant_exclusive_anomaly(type)
+        if res.is_empty():
+                # выдача не сработала - возвращаем СП
+                var lab = get_lab_data()
+                if lab:
+                        lab.season_points += price
+        return res
+
+
+func buy_season_rolls(gacha: String, times: int) -> bool:
+        """Крутки x10 за СП (mutants/artifacts)"""
+        var price := _season_price("rolls_mut" if gacha == "mutants" else "rolls_art")
+        if price <= 0 or times != 10 or not season_spend(price):
+                return false
+        if gacha == "mutants":
+                grant_mutant_rolls(times, "season_shop")
+        else:
+                grant_anomaly_rolls(times, "season_shop")
+        return true
+
+
+func buy_season_biomass() -> bool:
+        """100 000 биомассы за СП"""
+        var price := _season_price("biomass")
+        if price <= 0 or not season_spend(price):
+                return false
+        var lab = get_lab_data()
+        if lab == null:
+                return false
+        lab.biomass += 100000.0
+        save_to_active_slot()
+        return true
+
+
+func buy_season_copy(mutant_type: String) -> bool:
+        """Копия мутанта на ферму за СП (корм звёзд / обменник)"""
+        var price := _season_price("copy", mutant_type)
+        if price <= 0 or not season_spend(price):
+                return false
+        var lab = get_lab_data()
+        if lab == null:
+                return false
+        lab.add_farm_copy(mutant_type)
+        save_to_active_slot()
+        return true
+
+
+## ===== ОБМЕННИК (v0.19.0): артефакты выбросов и биомасса -> очки сезона =====
+func exchange_all_artifacts_to_sp() -> Dictionary:
+        var lab = get_lab_data()
+        if lab == null:
+                return {}
+        var count: int = lab.artifacts_common.size() + lab.artifacts_rare.size() + lab.artifacts_legendary.size()
+        if count <= 0:
+                return {}
+        var sp: int = lab.artifacts_common.size() * int(GachaData.EXCHANGE_ARTIFACT_SP.get("common", 1))
+        sp += lab.artifacts_rare.size() * int(GachaData.EXCHANGE_ARTIFACT_SP.get("rare", 3))
+        sp += lab.artifacts_legendary.size() * int(GachaData.EXCHANGE_ARTIFACT_SP.get("legendary", 10))
+        lab.artifacts_common.clear()
+        lab.artifacts_rare.clear()
+        lab.artifacts_legendary.clear()
+        lab.season_points += sp
+        save_to_active_slot()
+        return {"count": count, "sp": sp}
+
+
+func exchange_biomass_to_sp() -> bool:
+        var lab = get_lab_data()
+        if lab == null or lab.biomass < float(GachaData.EXCHANGE_BIOMASS_STEP):
+                return false
+        lab.biomass -= float(GachaData.EXCHANGE_BIOMASS_STEP)
+        lab.season_points += GachaData.EXCHANGE_BIOMASS_SP
+        save_to_active_slot()
+        return true
+
+
 func buy_shop_mutant(mutant_type: String, price: float) -> bool:
         """Магазин: купить мутанта за биомассу лаборатории (придёт на забег)"""
         if not current_save_data or not current_save_data.lab_data:
@@ -1005,13 +1110,19 @@ func process_run_result(result: Dictionary):
                         var bless_bonus: float = reward * 0.10
                         lab.biomass += bless_bonus
 
+                # Пережитый выброс (v0.19.0 «БАЗАР»): успешный забег = +3 очка сезона
+                if bool(result.get("success", false)):
+                        lab.season_points += 3
+
                 # Победы арены: вызовы/оборона; каждая 5-я победа = +1 крутка мутантов
                 if not arena_run_kind.is_empty():
                         if bool(result.get("success", false)):
                                 if arena_run_kind == "defense":
                                         lab.arena_wins_defense += 1
+                                        lab.season_points += 10
                                 else:
                                         lab.arena_wins_challenge += 1
+                                        lab.season_points += 5
                                 var total_wins: int = lab.arena_wins_challenge + lab.arena_wins_defense
                                 if total_wins % 5 == 0:
                                         lab.gacha_rolls_mutants += 1

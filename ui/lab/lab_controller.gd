@@ -39,6 +39,16 @@ signal settings_opened
 @onready var shop_biomass_label: Label = $ShopPanel/Panel/ShopBiomass
 @onready var mutant_grid: GridContainer = $ShopPanel/Panel/MutantGrid
 @onready var artifact_grid: GridContainer = $ShopPanel/Panel/ArtifactGrid
+@onready var shop_tabs: TabBar = $ShopPanel/Panel/ShopTabs
+@onready var shop_sp_label: Label = $ShopPanel/Panel/ShopSP
+@onready var mutants_header: Label = $ShopPanel/Panel/MutantsHeader
+@onready var artifacts_header: Label = $ShopPanel/Panel/ArtifactsHeader
+@onready var season_header: Label = $ShopPanel/Panel/SeasonHeader
+@onready var season_scroll: ScrollContainer = $ShopPanel/Panel/SeasonScroll
+@onready var season_grid: GridContainer = $ShopPanel/Panel/SeasonScroll/SeasonGrid
+@onready var exchange_header: Label = $ShopPanel/Panel/ExchangeHeader
+@onready var exchange_scroll: ScrollContainer = $ShopPanel/Panel/ExchangeScroll
+@onready var exchange_box: VBoxContainer = $ShopPanel/Panel/ExchangeScroll/ExchangeBox
 @onready var save_button: Button = $VBox/BottomButtons/SaveButton
 
 # Панели
@@ -81,6 +91,7 @@ func _ready():
         _refresh_ui()
         _setup_campaign_selector()
         _refresh_campaign_ui()
+        _build_shop_tabs()
         _build_star_ui()
         _build_farm_ui()
         _build_gacha_ui()
@@ -654,6 +665,8 @@ func _rebuild_shop():
                 _add_card_icon(btn, type, false)
                 btn.custom_minimum_size = Vector2(240, 46)
                 artifact_grid.add_child(btn)
+        _rebuild_shop_season()
+        _rebuild_shop_exchange()
 
 
 func _add_card_icon(btn: Button, type: String, is_mutant: bool):
@@ -700,6 +713,166 @@ func _on_shop_buy(kind: String, item_type: String, price: float):
                 _rebuild_shop()
         else:
                 _show_message(Loc.t("shop.not_enough"), 1.5)
+
+
+func _build_shop_tabs():
+        """Вкладки магазина: МУТАНТЫ/АРТЕФАКТЫ (за биомассу) + СЕЗОН/ОБМЕННИК (за СП)"""
+        if shop_tabs == null:
+                return
+        for t in ["МУТАНТЫ", "АРТЕФАКТЫ", "СЕЗОН", "ОБМЕННИК"]:
+                shop_tabs.add_tab(t)
+        shop_tabs.tab_changed.connect(_on_shop_tab_changed)
+        _on_shop_tab_changed(0)
+
+
+func _on_shop_tab_changed(idx: int):
+        mutants_header.visible = idx == 0
+        mutant_grid.visible = idx == 0
+        artifacts_header.visible = idx == 1
+        artifact_grid.visible = idx == 1
+        season_header.visible = idx == 2
+        season_scroll.visible = idx == 2
+        exchange_header.visible = idx == 3
+        exchange_scroll.visible = idx == 3
+        shop_biomass_label.visible = idx == 0 or idx == 1
+        shop_sp_label.visible = idx == 2 or idx == 3
+
+
+func _rebuild_shop_season():
+        """СЕЗОН: товары за очки сезона - эксклюзивы ЧЯ, крутки, биомасса, копии"""
+        for child in season_grid.get_children():
+                child.queue_free()
+        var sp: int = lab_data.season_points if lab_data else 0
+        shop_sp_label.text = "Очки сезона (СП): %d" % sp
+        for entry in GachaData.SEASON_SHOP:
+                var kind: String = entry[0]
+                var type: String = entry[1]
+                var item: String = entry[2]
+                var price: int = int(entry[3])
+                var sub := ""
+                if kind == "ex_mut":
+                        sub = "ЭКСКЛЮЗИВ · боец набора" + ("; дубликат = +1 копия" if (lab_data and lab_data.unlocked_mutants.has(type)) else "")
+                elif kind == "ex_anom":
+                        sub = "ЭКСКЛЮЗИВ · аномалия боя" + ("; дубликат = +400 био" if (lab_data and lab_data.exclusive_anomalies.has(type)) else "")
+                elif kind == "rolls_mut":
+                        sub = "+10 круток гачи мутантов"
+                elif kind == "rolls_art":
+                        sub = "+10 круток гачи артефактов"
+                elif kind == "biomass":
+                        sub = "+100 000 биомассы лаборатории"
+                elif kind == "copy":
+                        sub = "копия на ферму: корм звёзд"
+                var btn := Button.new()
+                btn.text = item + "\n" + str(price) + " СП"
+                btn.tooltip_text = sub
+                if kind == "ex_mut" or kind == "copy":
+                        _add_card_icon(btn, type, true)
+                elif kind == "ex_anom":
+                        _add_card_icon(btn, type, false)
+                if lab_data and sp < price:
+                        btn.disabled = true
+                btn.custom_minimum_size = Vector2(250, 52)
+                btn.pressed.connect(_on_season_buy.bind(kind, type, price))
+                btn.mouse_entered.connect(_play_hover_sound)
+                season_grid.add_child(btn)
+
+
+func _rebuild_shop_exchange():
+        """ОБМЕННИК: артефакты выбросов и биомасса -> очки сезона"""
+        for child in exchange_box.get_children():
+                child.queue_free()
+        var sp: int = lab_data.season_points if lab_data else 0
+        shop_sp_label.text = "Очки сезона (СП): %d" % sp
+        var c := 0
+        var r := 0
+        var l := 0
+        if lab_data:
+                c = lab_data.artifacts_common.size()
+                r = lab_data.artifacts_rare.size()
+                l = lab_data.artifacts_legendary.size()
+        var total: int = c + r + l
+        var sp_sum: int = c + r * 3 + l * 10
+        var row1 := Button.new()
+        if total <= 0:
+                row1.text = "Артефактов с выбросов нет\n(поднимай артефакты на забегах)"
+                row1.disabled = true
+        else:
+                row1.text = "Артефакты выбросов: %d шт\nОБМЕНЯТЬ ВСЕ -> +%d СП" % [total, sp_sum]
+                row1.pressed.connect(_on_exchange_artifacts)
+        row1.custom_minimum_size = Vector2(0, 56)
+        row1.mouse_entered.connect(_play_hover_sound)
+        exchange_box.add_child(row1)
+        var row2 := Button.new()
+        row2.text = "50 000 биомассы -> +5 СП"
+        row2.tooltip_text = "Сплав лишней биомассы в очки сезона"
+        if lab_data and lab_data.biomass < 50000.0:
+                row2.disabled = true
+        row2.custom_minimum_size = Vector2(0, 46)
+        row2.pressed.connect(_on_exchange_biomass)
+        row2.mouse_entered.connect(_play_hover_sound)
+        exchange_box.add_child(row2)
+        var cap := Label.new()
+        cap.text = "Курс: обычный артефакт = 1 СП, редкий = 3 СП,\nлегендарный = 10 СП. Артефакты падают на выбросах.\nСП также дают: вызов +5, оборона +10,\nпережитый выброс +3, задачи и медали сезона."
+        cap.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+        cap.add_theme_font_size_override("font_size", 12)
+        exchange_box.add_child(cap)
+
+
+func _on_season_buy(kind: String, type: String, price: int):
+        _play_click_sound()
+        var res: Dictionary = {}
+        if kind == "ex_mut" or kind == "ex_anom":
+                res = game_manager.buy_season_exclusive(kind, type)
+        elif kind == "rolls_mut":
+                if game_manager.buy_season_rolls("mutants", 10):
+                        res = {"name": "Крутки мутантов x10"}
+        elif kind == "rolls_art":
+                if game_manager.buy_season_rolls("artifacts", 10):
+                        res = {"name": "Крутки артефактов x10"}
+        elif kind == "biomass":
+                if game_manager.buy_season_biomass():
+                        res = {"name": "Биомасса 100 000"}
+        elif kind == "copy":
+                if game_manager.buy_season_copy(type):
+                        res = {"name": "Копия на ферму"}
+        if res.is_empty():
+                _show_message("Не хватает очков сезона (нужно " + str(price) + " СП)", 1.5)
+                return
+        var msg := ""
+        if res.has("status"):
+                if str(res.get("status")) == "dup":
+                        msg = str(res.get("name", "")) + ": дубликат -> " + ("копия на ферму" if kind == "ex_mut" else "+400 биомассы")
+                else:
+                        msg = "ЭКСКЛЮЗИВ: " + str(res.get("name", "")) + " - в коллекции!"
+        else:
+                msg = str(res.get("name", "")) + " - за " + str(price) + " СП"
+        _show_message(msg, 2.2)
+        lab_data = game_manager.get_lab_data()
+        _rebuild_shop()
+        _refresh_ui()
+
+
+func _on_exchange_artifacts():
+        _play_click_sound()
+        var res: Dictionary = game_manager.exchange_all_artifacts_to_sp()
+        if res.is_empty():
+                _show_message("Артефактов с выбросов нет", 1.2)
+                return
+        _show_message("Обмен: %d артефактов -> +%d СП" % [int(res.get("count", 0)), int(res.get("sp", 0))], 2.2)
+        lab_data = game_manager.get_lab_data()
+        _rebuild_shop()
+        _refresh_ui()
+
+
+func _on_exchange_biomass():
+        _play_click_sound()
+        if game_manager.exchange_biomass_to_sp():
+                _show_message("50 000 биомассы -> +5 СП", 2.0)
+                lab_data = game_manager.get_lab_data()
+                _rebuild_shop()
+                _refresh_ui()
+        else:
+                _show_message("Нужно 50 000 биомассы", 1.5)
 
 
 # ==================== ЗВЁЗДНОСТЬ ====================
@@ -3423,6 +3596,18 @@ func _on_arena_claim(kind: String, idx: int):
                         3:
                                 lab_data.biomass += 50000.0
                                 msg = "Задача сезона: +50 000 биомассы!"
+        var sp_bonus := 0
+        if kind == "medal":
+                var medal_sp := [25, 10, 10, 10, 10, 5, 5, 5, 15]
+                if idx >= 0 and idx < medal_sp.size():
+                        sp_bonus = medal_sp[idx]
+        else:
+                var task_sp := [10, 15, 5, 10]
+                if idx >= 0 and idx < task_sp.size():
+                        sp_bonus = task_sp[idx]
+        if sp_bonus > 0:
+                lab_data.season_points += sp_bonus
+                msg += " · +" + str(sp_bonus) + " СП"
         _show_message(msg, 2.2)
         _rebuild_arena_panel()
         _refresh_ui()

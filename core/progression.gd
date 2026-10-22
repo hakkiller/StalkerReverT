@@ -462,14 +462,16 @@ func on_run_result(result: Dictionary) -> void:
                                 _bump("waves", waves)
                                 xp += 8 * waves
                                 pts += waves
-                        # Арена: тип забега ставится лабораторией перед стартом
+                        # Арена: тип забега ставится лабораторией перед стартом.
+                        # ЗДЕСЬ НЕ гасим: game_manager.process_run_result читает kind
+                        # для счётчиков побед (медали) и очков сезона, и гасит сам.
+                        # (До v0.19.0 поглощение здесь убивало счётчики арен-побед.)
                         var kind_val = gm.get("arena_run_kind") if gm != null else null
                         if kind_val != null and not str(kind_val).is_empty():
                                 if success:
                                         _bump("arena_wins", 1)
                                         xp += 50
                                         pts += 3
-                                gm.set("arena_run_kind", "")
                 "tower":
                         if success:
                                 _bump("tower_wins", 1)
