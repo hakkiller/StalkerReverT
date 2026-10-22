@@ -1,6 +1,6 @@
 # STALKER REVERT · «Сталкер наоборот»
 
-![version](https://img.shields.io/badge/версия-v0.17.1_«Утилизатор»-b48cff) ![engine](https://img.shields.io/badge/Godot-4.6.1-478cbf) ![platform](https://img.shields.io/badge/платформы-Windows_·_Android-9aa89a)
+![version](https://img.shields.io/badge/версия-v0.18.0_«СУПЕР-ПРИЗЫВ»-b48cff) ![engine](https://img.shields.io/badge/Godot-4.6.1-478cbf) ![platform](https://img.shields.io/badge/платформы-Windows_·_Android-9aa89a)
 
 Стратегия в реальном времени, где игрок управляет **самой Зоной**. Сталкеры приходят на территорию, чтобы украсть артефакты, а Зона защищается: создаёт аномалии, призывает мутантов, управляет ресурсами и устраивает выбросы.
 
@@ -15,6 +15,7 @@
 | Версия | Имя | Бины |
 |---|---|---|
 | [v0.16.0](https://github.com/hakkiller/StalkerReverT/releases/tag/v0.16.0) | «Геофизик» | ПК · APK |
+| [v0.18.0](https://github.com/hakkiller/StalkerReverT/releases/tag/v0.18.0) | «СУПЕР-ПРИЗЫВ» — супер-гача: 6 эксклюзивов Чёрных ящиков + бонус 60 круток | ПК · APK |
 | [v0.17.1](https://github.com/hakkiller/StalkerReverT/releases/tag/v0.17.1) | «Утилизатор» (хотфикс) — награды арены, фикс трупов | ПК · APK |
 | [v0.17.0](https://github.com/hakkiller/StalkerReverT/releases/tag/v0.17.0) | «Утилизатор» — фильтр редкости + «Утилизировать всё» | ПК · APK |
 | [v0.16.1](https://github.com/hakkiller/StalkerReverT/releases/tag/v0.16.1) | «Геофизик» (хотфикс набора) | ПК · APK |
