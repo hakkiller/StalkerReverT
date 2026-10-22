@@ -1,6 +1,6 @@
 # STALKER REVERT · «Сталкер наоборот»
 
-![version](https://img.shields.io/badge/версия-v0.15.0_«Зоолог»-b48cff) ![engine](https://img.shields.io/badge/Godot-4.6.1-478cbf) ![platform](https://img.shields.io/badge/платформы-Windows_·_Android-9aa89a)
+![version](https://img.shields.io/badge/версия-v0.16.0_«Геофизик»-b48cff) ![engine](https://img.shields.io/badge/Godot-4.6.1-478cbf) ![platform](https://img.shields.io/badge/платформы-Windows_·_Android-9aa89a)
 
 Стратегия в реальном времени, где игрок управляет **самой Зоной**. Сталкеры приходят на территорию, чтобы украсть артефакты, а Зона защищается: создаёт аномалии, призывает мутантов, управляет ресурсами и устраивает выбросы.
 
@@ -14,6 +14,7 @@
 
 | Версия | Имя | Бины |
 |---|---|---|
+| [v0.16.0](https://github.com/hakkiller/StalkerReverT/releases/tag/v0.16.0) | «Геофизик» | ПК · APK |
 | [v0.15.0](https://github.com/hakkiller/StalkerReverT/releases/tag/v0.15.0) | «Зоолог» | ПК · APK |
 | [v0.14.0](https://github.com/hakkiller/StalkerReverT/releases/tag/v0.14.0) | «Интендант» | ПК · APK |
 | [v0.13.0](https://github.com/hakkiller/StalkerReverT/releases/tag/v0.13.0) | «Лаборант» | ПК · APK |
