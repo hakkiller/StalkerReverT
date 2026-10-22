@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ЦЕНТР ЗАГРУЗОК // STALKER REVERT</title>
+<meta name="description" content="STALKER REVERT — официальные сборки: APK, ПК, git-бандл. Постоянная страница на GitHub Pages.">
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0b0f0a; color: #dce8dc; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.5; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  header { border-bottom: 1px solid #2a3325; background: rgba(14,19,12,.95); }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 0 16px; }
+  .sys { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px; letter-spacing: .3em; color: rgba(52,211,153,.8); }
+  h1 { margin-top: 8px; font-size: 24px; font-weight: 700; letter-spacing: .02em; color: #fcd34d; }
+  @media (min-width: 640px) { h1 { font-size: 30px; } }
+  .badge { display: inline-flex; align-items: center; gap: 6px; border: 1px solid rgba(252,211,77,.4); background: rgba(252,211,77,.1); color: #fcd34d; border-radius: 4px; padding: 2px 8px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; }
+  .sub { margin-top: 8px; color: #9db29a; font-size: 14px; }
+  main { max-width: 720px; margin: 0 auto; padding: 24px 16px 40px; }
+  section { margin-bottom: 32px; }
+  h2 { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; letter-spacing: .25em; color: #9db29a; margin-bottom: 12px; font-weight: 500; }
+  .card { border: 1px solid #2a3325; background: #12170f; border-radius: 12px; padding: 18px; margin-bottom: 12px; transition: border-color .2s; }
+  .card:hover { border-color: rgba(252,211,77,.5); }
+  .card .tag { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 10px; letter-spacing: .1em; border: 1px solid rgba(252,211,77,.3); background: rgba(252,211,77,.08); color: #fcd34d; border-radius: 4px; padding: 2px 6px; }
+  .card .sz { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px; color: #7d8f7a; margin-left: 8px; }
+  .card h3 { margin-top: 6px; font-size: 16px; font-weight: 600; }
+  .card p { margin-top: 4px; color: #9db29a; font-size: 14px; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; margin-top: 12px; min-height: 44px; padding: 10px 18px; border-radius: 10px; background: #fcd34d; color: #000; font-weight: 600; font-size: 14px; text-decoration: none; transition: background .2s; }
+  .btn:hover { background: #fde68a; }
+  .btn.gr { background: #34d399; } .btn.gr:hover { background: #6ee7b7; }
+  .btn.ghost { background: transparent; border: 1px solid #3b4534; color: #dce8dc; } .btn.ghost:hover { background: #161c12; }
+  .note { border: 1px solid rgba(252,211,77,.25); background: rgba(252,211,77,.05); border-radius: 12px; padding: 16px 18px; }
+  .note h2 { color: #fcd34d; margin-bottom: 8px; }
+  .note ol { margin: 0; padding-left: 20px; color: #c4d4c1; font-size: 14px; }
+  .note li { margin: 6px 0; }
+  .shots { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  @media (min-width: 640px) { .shots { grid-template-columns: 1fr 1fr; } }
+  .shot { border: 1px solid #2a3325; background: #12170f; border-radius: 12px; overflow: hidden; text-decoration: none; }
+  .shot img { width: 100%; aspect-ratio: 16/9; object-fit: cover; object-position: top; display: block; }
+  .shot span { display: block; padding: 10px 12px; font-size: 12px; color: #9db29a; }
+  .arch { border: 1px solid #2a3325; border-radius: 12px; overflow: hidden; }
+  .arch a { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; background: #10150e; color: #dce8dc; text-decoration: none; font-size: 14px; border-bottom: 1px solid #222b20; transition: background .2s; }
+  .arch a:last-child { border-bottom: none; }
+  .arch a:hover { background: #161c12; }
+  .arch .v { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px; color: #7d8f7a; }
+  footer { border-top: 1px solid #2a3325; background: #0e130c; padding: 16px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px; color: #7d8f7a; }
+  footer .wrap { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; }
+  .ok { color: rgba(52,211,153,.7); }
+  a { color: #6ee7b7; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap" style="padding-top:24px;padding-bottom:24px;">
+    <p class="sys">СИСТЕМА // ДОСТУП РАЗРЕШЁН</p>
+    <h1>ЦЕНТР ЗАГРУЗОК // STALKER REVERT</h1>
+    <p class="sub"><span class="badge">v0.18.0</span> &nbsp;«Супер-призыв» · 22.10.2026 · супер-гача: эксклюзивы Чёрных ящиков + бонус 60 круток.</p>
+  </div>
+</header>
+<main>
+
+<section>
+  <h2>ЧТО НОВОГО В V0.18.0</h2>
+  <p style="color:#9db29a;font-size:14px;">
+    <b style="color:#dce8dc;">Супер-гача</b>: в «ДАРЕ ЗОНЫ» третий рукав «СУПЕР» — падают только
+    <b style="color:#dce8dc;">6 эксклюзивов Чёрных ящиков</b> (Альфа-псевдопёс, Пепельный снорк, Чёрный контролёр,
+    Пепельный вихрь, Багровая жара, Пустотная петля), которых <b style="color:#dce8dc;">не достать в обычной гаче</b>.
+    Пока собраны не все — гарантия нового; дубли: мутант → копия на ферму, аномалия → +400 биомассы.
+    И бонус круток: каждые <b style="color:#dce8dc;">60 обычных призывов</b> дают <b style="color:#dce8dc;">+1 супер-крутку</b>.
+  </p>
+</section>
+
+<section>
+  <h2>АКТУАЛЬНАЯ СБОРКА · V0.18.0</h2>
+  <div class="card">
+    <span class="tag">APK</span><span class="sz">29 МБ · ANDROID 7+</span>
+    <h3>STALKER REVERT · v0.18.0 «Супер-призыв»</h3>
+    <p>Полная игра для телефона. Скачай zip, распакуй, установи APK (разрешить установку из источника).</p>
+    <a class="btn" href="https://github.com/hakkiller/StalkerReverT/releases/download/v0.18.0/stalker-revert-android-v0.18.0.zip">⬇ Скачать APK</a>
+  </div>
+  <div class="card">
+    <span class="tag">ПК</span><span class="sz">39 МБ · WINDOWS</span>
+    <h3>STALKER REVERT · v0.18.0 «Супер-призыв»</h3>
+    <p>Версия для Windows. Распакуй ZIP (не из архива!), запусти игру.</p>
+    <a class="btn" href="https://github.com/hakkiller/StalkerReverT/releases/download/v0.18.0/stalker-revert-pc-v0.18.0.zip">⬇ Скачать ПК</a>
+  </div>
+  <div class="card">
+    <span class="tag">GIT</span><span class="sz">15 МБ · ОФЛАЙН-ЗАПАС</span>
+    <h3>Git-бандл · вся история репозитория</h3>
+    <p>Офлайн-копия истории: git clone stalker-revert-git-v0.18.0.bundle. Подробности в README_GIT.</p>
+    <a class="btn ghost" href="https://github.com/hakkiller/StalkerReverT/releases/download/v0.18.0/stalker-revert-git-v0.18.0.bundle">⬇ Бандл</a>
+    <a class="btn ghost" href="https://github.com/hakkiller/StalkerReverT/releases/download/v0.18.0/README_GIT_v0.18.0.md" style="margin-left:8px;">README</a>
+  </div>
+</section>
+
+<section class="note">
+  <h2>ЕСЛИ ПК-ВЕРСИЯ «НЕ ЗАПУСКАЕТСЯ»</h2>
+  <ol>
+    <li><b style="color:#dce8dc;">Распакуй ZIP</b>, не запускай игру изнутри архива.</li>
+    <li>SmartScreen: «Подробнее» → <b style="color:#dce8dc;">«Выполнить в любом случае»</b>.</li>
+    <li>Антивирус — добавь папку игры в исключения.</li>
+    <li>Чёрный экран (нет Vulkan) — запусти <span class="mono" style="color:#dce8dc;">START_COMPAT.bat</span>.</li>
+  </ol>
+</section>
+
+<section>
+  <h2>СКРИНШОТЫ · СУПЕР-ПРИЗЫВ</h2>
+  <div class="shots">
+    <a class="shot" href="super_showcase_v0180.png" target="_blank" rel="noreferrer"><img src="super_showcase_v0180.png" alt="Витрина супер-гачи"><span>Витрина супер-гачи — 6 эксклюзивов ↗</span></a>
+    <a class="shot" href="super_drop_v0180.png" target="_blank" rel="noreferrer"><img src="super_drop_v0180.png" alt="Дроп супер-призыва"><span>Дроп супер-призыва ↗</span></a>
+    <a class="shot" href="super_toast_v0180.png" target="_blank" rel="noreferrer"><img src="super_toast_v0180.png" alt="Тост супер-крутки"><span>Бонус: 60 круток → супер-крутка ↗</span></a>
+  </div>
+</section>
+
+<section>
+  <h2>ЗЕРКАЛО НА FILEBIN</h2>
+  <p style="color:#9db29a;font-size:14px;">Все файлы продублированы (живёт до ~27.10):</p>
+  <a class="btn gr" href="https://filebin.net/stalker-revert-2110">filebin.net/stalker-revert-2110</a>
+</section>
+
+<section>
+  <h2>АРХИВ · ВСЕ РЕЛИЗЫ НА GITHUB</h2>
+  <div class="arch">
+    <a href="https://github.com/hakkiller/StalkerReverT/releases/tag/v0.17.1"><span>v0.17.1 «Утилизатор» — хотфикс арены</span><span class="v">РЕЛИЗ ↗</span></a>
+    <a href="https://github.com/hakkiller/StalkerReverT/releases/tag/v0.17.0"><span>v0.17.0 «Утилизатор»</span><span class="v">РЕЛИЗ ↗</span></a>
+    <a href="https://github.com/hakkiller/StalkerReverT/releases/tag/v0.16.1"><span>v0.16.1 «Геофизик» — хотфикс набора</span><span class="v">РЕЛИЗ ↗</span></a>
+    <a href="https://github.com/hakkiller/StalkerReverT/releases/tag/v0.16.0"><span>v0.16.0 «Геофизик»</span><span class="v">РЕЛИЗ ↗</span></a>
+    <a href="https://github.com/hakkiller/StalkerReverT/releases/tag/v0.15.0"><span>v0.15.0 «Зоолог»</span><span class="v">РЕЛИЗ ↗</span></a>
+    <a href="https://github.com/hakkiller/StalkerReverT/releases/tag/v0.14.0"><span>v0.14.0 «Интендант»</span><span class="v">РЕЛИЗ ↗</span></a>
+    <a href="https://github.com/hakkiller/StalkerReverT/releases/tag/v0.13.0"><span>v0.13.0 «Лаборант»</span><span class="v">РЕЛИЗ ↗</span></a>
+    <a href="https://github.com/hakkiller/StalkerReverT/releases"><span>Все релизы и теги (v0.11.0+)</span><span class="v">GITHUB ↗</span></a>
+  </div>
+</section>
+
+<section class="note" style="border-color:rgba(52,211,153,.25);background:rgba(52,211,153,.05);">
+  <h2 style="color:#6ee7b7;">ЭТА СТРАНИЦА ЖИВЁТ НА GITHUB PAGES</h2>
+  <p style="color:#9db29a;font-size:14px;">Постоянная ссылка — работает всегда, независимо от прочих сервисов:
+  <span class="mono" style="color:#dce8dc;">hakkiller.github.io/StalkerReverT</span>.
+  Исходный код: <a href="https://github.com/hakkiller/StalkerReverT">github.com/hakkiller/StalkerReverT</a>.</p>
+</section>
+
+</main>
+<footer>
+  <div class="wrap">
+    <span>STALKER REVERT · v0.18.0 «Супер-призыв» · 22.10.2026</span>
+    <span class="ok">ZONA: STABIL’NA</span>
+  </div>
+</footer>
+</body>
+</html>
