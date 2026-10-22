@@ -1960,7 +1960,7 @@ func _on_gallery_close_pressed():
 
 func _gallery_tile(type: String, is_mutant: bool) -> Control:
         """Плитка карточки: цветная если открыто, серая если нет"""
-        var unlocked: bool = lab_data.unlocked_mutants.has(type) if is_mutant else lab_data.won_artifacts.has(type)
+        var unlocked: bool = lab_data.unlocked_mutants.has(type) if is_mutant else (lab_data.won_artifacts.has(type) or lab_data.exclusive_anomalies.has(type))
         var tile := VBoxContainer.new()
         tile.custom_minimum_size = Vector2(82, 0)
         tile.add_theme_constant_override("separation", 2)
@@ -1994,10 +1994,29 @@ func _gallery_tile(type: String, is_mutant: bool) -> Control:
         tile.add_child(stars_label)
 
         var unlock_level: int = GachaData.get_unlock_campaign_level(type)
-        tile.tooltip_text = Loc.t("gallery.unlocked_tip") if unlocked else Loc.t("gallery.locked_tip", {"n": unlock_level})
+        if unlocked:
+                tile.tooltip_text = Loc.t("gallery.unlocked_tip")
+        elif GachaData.is_exclusive_anomaly(type) or GachaData.is_exclusive(type):
+                tile.tooltip_text = "Эксклюзив Чёрных ящиков: ступени 10/20/30 трека наград"
+        else:
+                tile.tooltip_text = Loc.t("gallery.locked_tip", {"n": unlock_level})
         tile.mouse_filter = Control.MOUSE_FILTER_STOP
         tile.gui_input.connect(_on_gallery_tile_input.bind(type, is_mutant, unlocked))
         return tile
+
+
+func _gallery_ex_tile(type: String, is_mutant: bool) -> Control:
+        """Плитка эксклюзива Чёрного ящика: фиолетовая рамка, серый силуэт если не получен"""
+        var wrap := PanelContainer.new()
+        var sb := StyleBoxFlat.new()
+        sb.bg_color = Color("0a100b")
+        sb.set_border_width_all(2)
+        sb.set_corner_radius_all(8)
+        sb.border_color = Color("b48cff")
+        sb.set_content_margin_all(3)
+        wrap.add_theme_stylebox_override("panel", sb)
+        wrap.add_child(_gallery_tile(type, is_mutant))
+        return wrap
 
 
 func _on_gallery_tile_input(event: InputEvent, type: String, is_mutant: bool, unlocked: bool):
@@ -2156,6 +2175,17 @@ func _rebuild_gallery_panel():
         for rarity in GachaData.ARTIFACT_POOL.values():
                 for type in rarity:
                         art_grid.add_child(_gallery_tile(str(type), false))
+
+        gallery_list.add_child(_gallery_section("ЭКСКЛЮЗИВЫ ЧЁРНЫХ ЯЩИКОВ"))
+        var ex_grid := GridContainer.new()
+        ex_grid.columns = 3
+        ex_grid.add_theme_constant_override("h_separation", 4)
+        ex_grid.add_theme_constant_override("v_separation", 4)
+        gallery_list.add_child(ex_grid)
+        for ex in GachaData.EXCLUSIVE_MUTANTS:
+                ex_grid.add_child(_gallery_ex_tile(str(ex["type"]), true))
+        for ax in GachaData.EXCLUSIVE_ANOMALIES:
+                ex_grid.add_child(_gallery_ex_tile(str(ax["type"]), false))
 
 
 func _gallery_section(text: String) -> Label:
@@ -4197,7 +4227,7 @@ func _make_chest_tile(tier: int) -> Control:
         if int(contents["anomaly_rolls"]) > 0:
                 parts.append("крутки аном. ×%d" % int(contents["anomaly_rolls"]))
         if int(contents.get("exclusive", 0)) > 0:
-                parts.append("мутант-эксклюзив")
+                parts.append("2 эксклюзива: мутант + аномалия")
         desc.text = "\n".join(parts)
         desc.add_theme_font_override("font", BunkerUI.font_body())
         desc.add_theme_font_size_override("font_size", 12)
@@ -4244,6 +4274,10 @@ func _on_chest_claim(tier: int):
                 parts.append("ЭКСКЛЮЗИВ «%s»: %s" % [
                         str(rewards["exclusive_name"]),
                         "новый в коллекции" if bool(rewards.get("exclusive_new")) else "повтор — копия на ферму"])
+        if str(rewards.get("ex_anomaly_type", "")) != "":
+                parts.append("АНОМАЛИЯ-ЭКСКЛЮЗИВ «%s»: %s" % [
+                        str(rewards["ex_anomaly_name"]),
+                        "новая в коллекции" if bool(rewards.get("ex_anomaly_new")) else "повтор — +400 биомассы"])
         _show_message("%s ОТКРЫТ: %s" % [Prog.chest_name(Prog.chest_kind(tier)), ", ".join(parts)], 2.6)
         _refresh_tasks_panel()
 

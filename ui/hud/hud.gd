@@ -104,6 +104,8 @@ func _ready():
                 # Центральный баннер объявлений + крупные панели боя (тач-UX)
                 _build_announce_banner.call_deferred()
                 _rescale_battle_panels.call_deferred()
+                # Полевой набор: автосбор из открытых + визуал (после deferred ценников)
+                _loadout_init.call_deferred()
 
                 # print("HUD инициализирован")
 
@@ -264,6 +266,7 @@ func refresh_mutant_unlocks():
                                 btn.tooltip_text = Loc.t("hud.locked_tip") if not unlocked else ""
                                 if not unlocked and not btn.text.begins_with("🔒"):
                                                 btn.text = "🔒" + btn.text
+                _refresh_loadout_ui()
 
 
 func _connect_buttons():
@@ -408,6 +411,8 @@ func _on_start_run_pressed():
                 start_panel.visible = false
                 # Условия звёзд появляются только после старта забега
                 _refresh_tower_conditions()
+                # После старта набор зафиксирован: невзятые виды недоступны
+                _refresh_loadout_ui()
                 # print("HUD: старт забега запрошен")
 
 
@@ -443,6 +448,8 @@ func _show_emission_note(text: String):
 
 func _on_fire_pressed():
                 _play_click_sound()
+                if _loadout_tap("anomaly", "heat_anomaly"):
+                                return
                 if _touch_mode:
                                 _toggle_placement(fire_button, "anomaly:heat_anomaly")
                                 return
@@ -450,6 +457,8 @@ func _on_fire_pressed():
 
 func _on_electric_pressed():
                 _play_click_sound()
+                if _loadout_tap("anomaly", "electric_anomaly"):
+                                return
                 if _touch_mode:
                                 _toggle_placement(electric_button, "anomaly:electric_anomaly")
                                 return
@@ -457,6 +466,8 @@ func _on_electric_pressed():
 
 func _on_acid_pressed():
                 _play_click_sound()
+                if _loadout_tap("anomaly", "acid_anomaly"):
+                                return
                 if _touch_mode:
                                 _toggle_placement(acid_button, "anomaly:acid_anomaly")
                                 return
@@ -464,6 +475,8 @@ func _on_acid_pressed():
 
 func _on_vortex_pressed():
                 _play_click_sound()
+                if _loadout_tap("anomaly", "gravity_vortex"):
+                                return
                 if _touch_mode:
                                 _toggle_placement(vortex_button, "anomaly:gravity_vortex")
                                 return
@@ -471,6 +484,8 @@ func _on_vortex_pressed():
 
 func _on_lift_pressed():
                 _play_click_sound()
+                if _loadout_tap("anomaly", "gravity_lift"):
+                                return
                 if _touch_mode:
                                 _toggle_placement(lift_button, "anomaly:gravity_lift")
                                 return
@@ -478,6 +493,8 @@ func _on_lift_pressed():
 
 func _on_whirlwind_pressed():
                 _play_click_sound()
+                if _loadout_tap("anomaly", "gravity_whirlwind"):
+                                return
                 if _touch_mode:
                                 _toggle_placement(whirlwind_button, "anomaly:gravity_whirlwind")
                                 return
@@ -485,6 +502,8 @@ func _on_whirlwind_pressed():
 
 func _on_steam_pressed():
                 _play_click_sound()
+                if _loadout_tap("anomaly", "thermal_steam"):
+                                return
                 if _touch_mode:
                                 _toggle_placement(steam_button, "anomaly:thermal_steam")
                                 return
@@ -492,6 +511,8 @@ func _on_steam_pressed():
 
 func _on_comet_pressed():
                 _play_click_sound()
+                if _loadout_tap("anomaly", "thermal_comet"):
+                                return
                 if _touch_mode:
                                 _toggle_placement(comet_button, "anomaly:thermal_comet")
                                 return
@@ -499,6 +520,8 @@ func _on_comet_pressed():
 
 func _on_jelly_pressed():
                 _play_click_sound()
+                if _loadout_tap("anomaly", "chemical_jelly"):
+                                return
                 if _touch_mode:
                                 _toggle_placement(jelly_button, "anomaly:chemical_jelly")
                                 return
@@ -506,6 +529,8 @@ func _on_jelly_pressed():
 
 func _on_gas_pressed():
                 _play_click_sound()
+                if _loadout_tap("anomaly", "chemical_gas"):
+                                return
                 if _touch_mode:
                                 _toggle_placement(gas_button, "anomaly:chemical_gas")
                                 return
@@ -513,6 +538,8 @@ func _on_gas_pressed():
 
 func _on_acid_cloud_pressed():
                 _play_click_sound()
+                if _loadout_tap("anomaly", "chemical_acid_cloud"):
+                                return
                 if _touch_mode:
                                 _toggle_placement(acid_cloud_button, "anomaly:chemical_acid_cloud")
                                 return
@@ -520,6 +547,8 @@ func _on_acid_cloud_pressed():
 
 func _on_radiation_pressed():
                 _play_click_sound()
+                if _loadout_tap("anomaly", "radiation_hotspot"):
+                                return
                 if _touch_mode:
                                 _toggle_placement(radiation_button, "anomaly:radiation_hotspot")
                                 return
@@ -527,6 +556,8 @@ func _on_radiation_pressed():
 
 func _on_time_pressed():
                 _play_click_sound()
+                if _loadout_tap("anomaly", "time_dilation"):
+                                return
                 if _touch_mode:
                                 _toggle_placement(time_button, "anomaly:time_dilation")
                                 return
@@ -534,6 +565,8 @@ func _on_time_pressed():
 
 func _on_teleport_pressed():
                 _play_click_sound()
+                if _loadout_tap("anomaly", "teleport"):
+                                return
                 if _touch_mode:
                                 _toggle_placement(teleport_button, "anomaly:teleport")
                                 return
@@ -541,6 +574,8 @@ func _on_teleport_pressed():
 
 func _on_tesla_pressed():
                 _play_click_sound()
+                if _loadout_tap("anomaly", "electric_tesla"):
+                                return
                 if _touch_mode:
                                 _toggle_placement(tesla_button, "anomaly:electric_tesla")
                                 return
@@ -548,6 +583,8 @@ func _on_tesla_pressed():
 
 func _on_fluff_pressed():
                 _play_click_sound()
+                if _loadout_tap("anomaly", "bio_burning_fluff"):
+                                return
                 if _touch_mode:
                                 _toggle_placement(fluff_button, "anomaly:bio_burning_fluff")
                                 return
@@ -579,6 +616,8 @@ func _toggle_placement(btn: Button, item_id: String):
 
 func _on_dog_pressed():
                 _play_click_sound()
+                if _loadout_tap("mutant", "dog_mutant"):
+                                return
                 if _touch_mode:
                                 _toggle_placement(dog_button, "mutant:dog_mutant")
                                 return
@@ -586,6 +625,8 @@ func _on_dog_pressed():
 
 func _on_flesh_pressed():
                 _play_click_sound()
+                if _loadout_tap("mutant", "flesh"):
+                                return
                 if _touch_mode:
                                 _toggle_placement(flesh_button, "mutant:flesh")
                                 return
@@ -593,6 +634,8 @@ func _on_flesh_pressed():
 
 func _on_snork_pressed():
                 _play_click_sound()
+                if _loadout_tap("mutant", "snork_mutant"):
+                                return
                 if _touch_mode:
                                 _toggle_placement(snork_button, "mutant:snork_mutant")
                                 return
@@ -600,6 +643,8 @@ func _on_snork_pressed():
 
 func _on_pseudodog_pressed():
                 _play_click_sound()
+                if _loadout_tap("mutant", "pseudodog"):
+                                return
                 if _touch_mode:
                                 _toggle_placement(pseudodog_button, "mutant:pseudodog")
                                 return
@@ -607,6 +652,8 @@ func _on_pseudodog_pressed():
 
 func _on_controller_pressed():
                 _play_click_sound()
+                if _loadout_tap("mutant", "controller_mutant"):
+                                return
                 if _touch_mode:
                                 _toggle_placement(controller_button, "mutant:controller_mutant")
                                 return
@@ -614,6 +661,8 @@ func _on_controller_pressed():
 
 func _on_poltergeist_pressed():
                 _play_click_sound()
+                if _loadout_tap("mutant", "poltergeist"):
+                                return
                 if _touch_mode:
                                 _toggle_placement(poltergeist_button, "mutant:poltergeist")
                                 return
@@ -621,6 +670,8 @@ func _on_poltergeist_pressed():
 
 func _on_bloodsucker_pressed():
                 _play_click_sound()
+                if _loadout_tap("mutant", "bloodsucker"):
+                                return
                 if _touch_mode:
                                 _toggle_placement(bloodsucker_button, "mutant:bloodsucker")
                                 return
@@ -628,6 +679,8 @@ func _on_bloodsucker_pressed():
 
 func _on_chimera_pressed():
                 _play_click_sound()
+                if _loadout_tap("mutant", "chimera"):
+                                return
                 if _touch_mode:
                                 _toggle_placement(chimera_button, "mutant:chimera")
                                 return
@@ -635,6 +688,8 @@ func _on_chimera_pressed():
 
 func _on_zombie_pressed():
                 _play_click_sound()
+                if _loadout_tap("mutant", "zombie"):
+                                return
                 if _touch_mode:
                                 _toggle_placement(zombie_button, "mutant:zombie")
                                 return
@@ -643,6 +698,8 @@ func _on_zombie_pressed():
 
 func _on_pseudogiant_pressed():
                 _play_click_sound()
+                if _loadout_tap("mutant", "pseudogiant"):
+                                return
                 if _touch_mode:
                                 _toggle_placement(pseudogiant_button, "mutant:pseudogiant")
                                 return
@@ -833,3 +890,69 @@ func _rescale_battle_panels() -> void:
                                 start_run_button.position = Vector2(6, 14)
                                 start_run_button.size = Vector2(238, 40)
                                 start_run_button.add_theme_font_size_override("font_size", 12)
+
+
+# ==================== ПОЛЕВОЙ НАБОР (v0.16.0 «ГЕОФИЗИК») ====================
+# В бой берётся максимум 9 видов аномалий и 9 видов мутантов. До старта забега
+# клик по кнопке панели = взять/снять вид; после старта невзятые заблокированы.
+
+const ANOMALY_ORDER := ["heat_anomaly", "electric_anomaly", "acid_anomaly", "gravity_vortex", "gravity_lift", "gravity_whirlwind", "thermal_steam", "thermal_comet", "chemical_jelly", "chemical_gas", "chemical_acid_cloud", "radiation_hotspot", "time_dilation", "teleport", "electric_tesla", "bio_burning_fluff"]
+const MUTANT_ORDER := ["zombie", "dog_mutant", "flesh", "snork_mutant", "pseudodog", "poltergeist", "controller_mutant", "bloodsucker", "chimera", "pseudogiant"]
+
+
+func _loadout_init():
+                var gm = get_tree().get_first_node_in_group("game_manager")
+                if gm and gm.has_method("ensure_loadout"):
+                                gm.ensure_loadout(ANOMALY_ORDER, MUTANT_ORDER)
+                _refresh_loadout_ui()
+
+
+## Клик по боевой кнопке. До старта - режим набора (клик поглощается),
+## после старта невзятый вид ругается подсказкой. False - обычное действие.
+func _loadout_tap(kind: String, type: String) -> bool:
+                var gm = get_tree().get_first_node_in_group("game_manager")
+                var lab = gm.get_lab_data() if gm else null
+                if lab == null:
+                                return false
+                if start_panel.visible:
+                                var res: String = lab.toggle_loadout(kind, type)
+                                if res == "full":
+                                                show_reward_note("В наборе максимум 9 видов - снимите лишний")
+                                _refresh_loadout_ui()
+                                return true
+                if not lab.in_loadout(kind, type):
+                                show_reward_note("«%s» не взят в бой - набор выбирается до старта забега" % GachaData.display_name(type))
+                                return true
+                return false
+
+
+## Заголовки панелей со счётчиком + тусклые невзятые кнопки + пометка эксклюзивов
+func _refresh_loadout_ui():
+                var gm = get_tree().get_first_node_in_group("game_manager")
+                var lab = gm.get_lab_data() if gm else null
+                if lab == null:
+                                return
+                var started: bool = not start_panel.visible
+                var anomaly_title: Label = get_node_or_null("AnomalyPanel/Title")
+                var mutant_title: Label = get_node_or_null("MutantPanel/Title")
+                if anomaly_title:
+                                anomaly_title.text = "АНОМАЛИИ" if started else "АНОМАЛИИ · В НАБОРЕ %d/9 (клик = взять/снять)" % lab.loadout_count("anomaly")
+                if mutant_title:
+                                mutant_title.text = "МУТАНТЫ" if started else "МУТАНТЫ · В НАБОРЕ %d/9 (клик = взять/снять)" % lab.loadout_count("mutant")
+                for btn in _anomaly_buttons:
+                                var atype: String = _anomaly_buttons[btn]
+                                var taken: bool = lab.in_loadout("anomaly", atype)
+                                if started:
+                                                btn.disabled = btn.disabled or not taken
+                                btn.modulate = Color(1, 1, 1, 1) if taken else Color(0.6, 0.64, 0.58, 0.72)
+                                if gm and gm.has_method("owned_anomaly_exclusive_for"):
+                                                var ex_t: String = gm.owned_anomaly_exclusive_for(atype)
+                                                if not ex_t.is_empty() and not btn.text.begins_with("✦"):
+                                                                btn.text = "✦ " + btn.text
+                                                                btn.tooltip_text = "Эксклюзив Чёрного ящика: %s - ставит усиленную версию" % GachaData.display_name(ex_t)
+                for btn in _mutant_buttons:
+                                var mtype: String = _mutant_buttons[btn]
+                                var mtaken: bool = lab.in_loadout("mutant", mtype)
+                                if started:
+                                                btn.disabled = btn.disabled or not mtaken
+                                btn.modulate = Color(1, 1, 1, 1) if mtaken else Color(0.6, 0.64, 0.58, 0.72)

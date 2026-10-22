@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0" stop-color="#4a4d48"/><stop offset="0.55" stop-color="#262824"/><stop offset="1" stop-color="#121312"/>
+</linearGradient>
+<radialGradient id="halo" cx="0.5" cy="0.5" r="0.5">
+<stop offset="0" stop-color="#9aa096" stop-opacity="0.55"/><stop offset="1" stop-color="#9aa096" stop-opacity="0"/>
+</radialGradient>
+<radialGradient id="vig" cx="0.5" cy="0.42" r="0.75">
+<stop offset="0.55" stop-color="#000000" stop-opacity="0"/><stop offset="1" stop-color="#000000" stop-opacity="0.45"/>
+</radialGradient>
+</defs>
+<rect x="2" y="2" width="124" height="124" rx="14" fill="url(#bg)"/>
+<rect x="2" y="2" width="124" height="124" rx="14" fill="url(#vig)"/>
+<ellipse cx="64" cy="108" rx="42" ry="10" fill="#000000" opacity="0.4"/>
+<path d="M64 22 C 40 34, 40 44, 64 52 C 88 60, 88 70, 64 78 C 46 84, 44 92, 56 98" fill="none" stroke="#8d928a" stroke-width="7" stroke-linecap="round" opacity="0.9"/>
+<path d="M64 30 C 88 40, 88 50, 64 58 C 42 66, 44 76, 62 84 C 76 90, 74 96, 66 100" fill="none" stroke="#6c7069" stroke-width="5" stroke-linecap="round" opacity="0.75"/>
+<circle cx="30" cy="40" r="2.2" fill="#8d928a" opacity="0.8"/>
+<circle cx="98" cy="34" r="1.8" fill="#6c7069" opacity="0.8"/>
+<circle cx="100" cy="74" r="2.4" fill="#8d928a" opacity="0.7"/>
+<circle cx="26" cy="80" r="1.6" fill="#6c7069" opacity="0.7"/>
+<circle cx="64" cy="56" r="40" fill="url(#halo)" opacity="0.35"/>
+<rect x="3" y="3" width="122" height="122" rx="13" fill="none" stroke="#b48cff" stroke-width="3"/>
+</svg>

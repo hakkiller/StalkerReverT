@@ -150,3 +150,58 @@ func get_health_percent() -> float:
 
 func get_stalker_count() -> int:
 	return stalkers_in_zone.size()
+
+# ==================== ЭКСКЛЮЗИВНЫЙ ВАРИАНТ (ЧЁРНЫЙ ЯЩИК) ====================
+
+var _exclusive_label: String = ""
+var _exclusive_color: Color = Color(0, 0, 0, 0)
+var _exclusive_accent: Color = Color.WHITE
+var _exclusive_dmg: float = 1.0
+var _exclusive_rad: float = 1.0
+var _exclusive_props: Dictionary = {}
+
+
+func apply_exclusive_anomaly(ex: Dictionary) -> void:
+	if ex.is_empty():
+		return
+	_exclusive_label = str(ex.get("label", ""))
+	var col_arr: Array = ex.get("color", [1.0, 1.0, 1.0])
+	_exclusive_color = Color(float(col_arr[0]), float(col_arr[1]), float(col_arr[2]))
+	_exclusive_accent = Color(str(ex.get("accent", "ffffff")))
+	_exclusive_dmg = float(ex.get("dmg", 1.0))
+	_exclusive_rad = float(ex.get("rad", 1.0))
+	_exclusive_props = ex.get("props", {})
+	_apply_exclusive_look.call_deferred()
+
+
+func _apply_exclusive_look():
+	# Подклассы перетирают color/_update_color в _ready - применяем строго после
+	if _exclusive_color.a > 0.0:
+		for p in get_property_list():
+			var n := str(p["name"])
+			if n.ends_with("_color") and get(n) is Color:
+				set(n, _exclusive_color)
+		color = _exclusive_color
+	damage_per_second = damage_per_second * _exclusive_dmg
+	# Радиус живёт в базовом radius или в полях подклассов (*_radius) - множим все
+	for p in get_property_list():
+		var rn := str(p["name"])
+		if (rn == "radius" or rn.ends_with("_radius")) and get(rn) is float:
+			set(rn, float(get(rn)) * _exclusive_rad)
+	for key in _exclusive_props:
+		if get(str(key)) != null:
+			set(str(key), _exclusive_props[key])
+	_update_size()
+	_update_color()
+	if not _exclusive_label.is_empty():
+		var lbl := Label3D.new()
+		lbl.text = _exclusive_label
+		lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		lbl.no_depth_test = true
+		lbl.font_size = 40
+		lbl.pixel_size = 0.01
+		lbl.outline_size = 10
+		lbl.modulate = _exclusive_accent
+		lbl.outline_modulate = Color(0.05, 0.04, 0.03, 0.95)
+		add_child(lbl)
+		lbl.position = Vector3(0.0, radius + 1.4, 0.0)

@@ -144,6 +144,52 @@ const EXCLUSIVE_MUTANTS := [
 ]
 
 
+# ЭКСКЛЮЗИВНЫЕ АНОМАЛИИ: только из Чёрных ящиков трека наград (ступени 10/20/30),
+# парой к эксклюзивным мутантам. Варианты существующих сцен: целевой цвет + усиленные
+# статы поверх базы. color - целевой цвет аномалии (перекрывает цвет базы),
+# dmg/rad - множители урона и радиуса, props - прямые поля сцены (если есть).
+const EXCLUSIVE_ANOMALIES := [
+        {
+                "type": "ash_tornado", "name": "Пепельный вихрь", "base": "gravity_whirlwind",
+                "label": "ПЕПЕЛЬНЫЙ ВИХРЬ", "accent": "cfc9ba", "color": [0.66, 0.63, 0.56],
+                "dmg": 1.3, "rad": 1.4, "props": {"centrifugal_force": 5.5},
+                "desc": "Серая мгла: на 40% шире и на 30% злее обычного вихря",
+        },
+        {
+                "type": "crimson_heat", "name": "Багровая жара", "base": "heat_anomaly",
+                "label": "БАГРОВАЯ ЖАРА", "accent": "ff6a4d", "color": [0.85, 0.2, 0.12],
+                "dmg": 1.5, "rad": 1.2, "props": {},
+                "desc": "Кровавый жар: +50% урона, +20% радиуса",
+        },
+        {
+                "type": "void_loop", "name": "Пустотная петля", "base": "time_dilation",
+                "label": "ПУСТОТНАЯ ПЕТЛЯ", "accent": "b48cff", "color": [0.36, 0.14, 0.62],
+                "dmg": 1.2, "rad": 1.5, "props": {"time_scale": 0.2},
+                "desc": "Провал во времени: +50% радиуса, время течёт вязче",
+        },
+]
+
+
+static func get_exclusive_anomaly(type: String) -> Dictionary:
+        for ax in EXCLUSIVE_ANOMALIES:
+                if str(ax["type"]) == type:
+                        return ax
+        return {}
+
+
+static func is_exclusive_anomaly(type: String) -> bool:
+        return not get_exclusive_anomaly(type).is_empty()
+
+
+## Эксклюзивная аномалия милстоуна: ротация сдвинута на 1 против мутантской,
+## чтобы один Чёрный ящик давал пару разных эксклюзивов (мутант != индекс аномалии)
+static func exclusive_anomaly_for_milestone(cycle: int, milestone: int) -> Dictionary:
+        if EXCLUSIVE_ANOMALIES.is_empty():
+                return {}
+        var idx := (maxi(int(cycle), 1) + maxi(int(milestone), 1)) % EXCLUSIVE_ANOMALIES.size()
+        return EXCLUSIVE_ANOMALIES[idx]
+
+
 static func get_exclusive(type: String) -> Dictionary:
         for ex in EXCLUSIVE_MUTANTS:
                 if str(ex["type"]) == type:
@@ -163,9 +209,9 @@ static func exclusive_for_milestone(cycle: int, milestone: int) -> Dictionary:
         return EXCLUSIVE_MUTANTS[idx]
 
 
-## Полный размер коллекции: пулы гачи + эксклюзивы Чёрных ящиков.
+## Полный размер коллекции: пулы гачи + эксклюзивы Чёрных ящиков (мутанты и аномалии).
 static func total_collection_size() -> int:
-        var n := EXCLUSIVE_MUTANTS.size()
+        var n := EXCLUSIVE_MUTANTS.size() + EXCLUSIVE_ANOMALIES.size()
         for rarity in MUTANT_POOL:
                 n += MUTANT_POOL[rarity].size()
         for rarity in ARTIFACT_POOL:
@@ -207,6 +253,8 @@ const DISPLAY_NAMES := {
         "pseudogiant": "Псевдогигант", "chimera": "Химера",
         "alpha_pseudodog": "Альфа-псевдопёс", "ash_snork": "Пепельный снорк",
         "obsidian_controller": "Чёрный контролёр",
+        "ash_tornado": "Пепельный вихрь", "crimson_heat": "Багровая жара",
+        "void_loop": "Пустотная петля",
         "common_artifact": "Обычный артефакт", "battery_artifact": "Батарейка",
         "glowstick_artifact": "Светляк", "slime_artifact": "Слизь",
         "spark_artifact": "Искра", "gas_bottle_artifact": "Газовый баллон",

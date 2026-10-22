@@ -407,6 +407,13 @@ func claim_tier(tier: int) -> Dictionary:
                                 rewards["exclusive_type"] = str(ex["type"])
                                 rewards["exclusive_name"] = str(ex["name"])
                                 rewards["exclusive_new"] = str(ex_res.get("status", "new")) == "new"
+                        # Чёрный ящик несёт и эксклюзивную аномалию (ротация сдвинута)
+                        var ax := GachaData.exclusive_anomaly_for_milestone(track_cycle(), int(tier / 10.0))
+                        var ax_res: Dictionary = gm.grant_exclusive_anomaly(str(ax["type"]))
+                        if not ax_res.is_empty():
+                                rewards["ex_anomaly_type"] = str(ax["type"])
+                                rewards["ex_anomaly_name"] = str(ax["name"])
+                                rewards["ex_anomaly_new"] = str(ax_res.get("status", "new")) == "new"
         # Все ступени закрыты: новый цикл, очки обнуляются, награды жирнее.
         var all_done := true
         for i in range(1, TRACK_TIERS + 1):

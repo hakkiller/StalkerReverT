@@ -12,8 +12,8 @@ config_version=5
 [application]
 
 config/name="StalkerRevert"
-config/version="0.15.0"
-config/version_stamp="v0.15.0 · «ЗООЛОГ» · 22.10.26"
+config/version="0.16.0"
+config/version_stamp="v0.16.0 · «ГЕОФИЗИК» · 22.10.26"
 run/main_scene="res://scenes/ui/main_menu.tscn"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"

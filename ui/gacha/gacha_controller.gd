@@ -365,6 +365,8 @@ func _collection_types() -> Array:
         # Эксклюзивы Чёрного ящика замыкают коллекцию (фиолетовая рамка)
         for ex in GachaData.EXCLUSIVE_MUTANTS:
                 out.append(["mut", str(ex["type"])])
+        for ax in GachaData.EXCLUSIVE_ANOMALIES:
+                out.append(["art", str(ax["type"])])
         return out
 
 
@@ -627,7 +629,12 @@ func _refresh_collection() -> void:
                 var is_mut := kind == "mut"
                 var has := false
                 if lab:
-                        has = lab.unlocked_mutants.has(type) if is_mut else lab.won_artifacts.has(type)
+                        if is_mut:
+                                has = lab.unlocked_mutants.has(type)
+                        elif GachaData.is_exclusive_anomaly(type):
+                                has = lab.exclusive_anomalies.has(type)
+                        else:
+                                has = lab.won_artifacts.has(type)
                 if has:
                         unlocked += 1
                 _coll_box.add_child(_make_coll_tile(kind, type, has))
@@ -642,7 +649,7 @@ func _make_coll_tile(kind: String, type: String, has: bool) -> Control:
         tsb.set_border_width_all(2)
         tsb.set_corner_radius_all(8)
         if has:
-                if kind == "mut" and GachaData.is_exclusive(type):
+                if GachaData.is_exclusive(type) or GachaData.is_exclusive_anomaly(type):
                         tsb.border_color = Color("b48cff")
                 else:
                         var rar := GachaData.get_mutant_rarity(type) if kind == "mut" else GachaData.get_artifact_rarity(type)
@@ -651,7 +658,7 @@ func _make_coll_tile(kind: String, type: String, has: bool) -> Control:
                 tsb.border_color = Color("232b23")
                 tsb.bg_color = Color("0c0f0c")
         tile.add_theme_stylebox_override("panel", tsb)
-        if has and kind == "mut" and GachaData.is_exclusive(type):
+        if has and (GachaData.is_exclusive(type) or GachaData.is_exclusive_anomaly(type)):
                 tile.tooltip_text = Loc.type_name(type) + "\nэксклюзив Чёрного ящика"
         else:
                 tile.tooltip_text = Loc.type_name(type) if has else Loc.t("card.locked")

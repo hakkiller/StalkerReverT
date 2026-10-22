@@ -1035,7 +1035,13 @@ func create_anomaly(type: String, position: Vector3, difficulty: int = 1) -> Nod
                                 pass # print("Недостаточно энергии для " + type + " (нужно: " + str(cost) + ")")
                                 return null
 
-                return anomaly_manager.create_anomaly(type, position, difficulty, cost)
+                var anomaly = anomaly_manager.create_anomaly(type, position, difficulty, cost)
+                if anomaly and gm_guard:
+                                # Эксклюзив Чёрного ящика: полученная аномалия ставит усиленную версию
+                                var ex_type: String = gm_guard.owned_anomaly_exclusive_for(type)
+                                if not ex_type.is_empty():
+                                                anomaly.apply_exclusive_anomaly(GachaData.get_exclusive_anomaly(ex_type))
+                return anomaly
 
 # Артефакты
 func create_artifact(artifact_type: String, position: Vector3, rarity: String = "common", value: float = 10.0) -> Node:

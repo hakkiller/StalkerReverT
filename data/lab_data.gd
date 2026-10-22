@@ -61,6 +61,15 @@ var campaign_level_reached: int = 1
 @export var arena_wins_defense: int = 0
 @export var arena_defense_squad: Array[String] = []
 
+# Эксклюзивные аномалии Чёрных ящиков (типы из GachaData.EXCLUSIVE_ANOMALIES)
+@export var exclusive_anomalies: Array[String] = []
+
+# ПОЛЕВОЙ НАБОР: какие виды берём в бой (макс 9 видов на каждый список).
+# Пусто = автосбор из открытых при входе в бой (старые сейвы совместимы).
+# Выбор - на кнопках HUD до старта забега; после старта доступны только взятые.
+@export var loadout_anomalies: Array[String] = []
+@export var loadout_mutants: Array[String] = []
+
 # КРУТКИ ГАЧИ. DEV: мутантные - миллион по запросу игрока (смотреть шансы),
 # аномалийные крутки - серьёзная валюта (30-й уровень/30 волн = +10), дефолт 0.
 @export var gacha_rolls_mutants: int = 1000000
@@ -441,6 +450,35 @@ static func stars_text(stars: int) -> String:
     return text
 
 
+# ==================== ПОЛЕВОЙ НАБОР ====================
+
+const MAX_LOADOUT: int = 9
+
+
+func loadout_list(kind: String) -> Array[String]:
+    return loadout_anomalies if kind == "anomaly" else loadout_mutants
+
+
+func loadout_count(kind: String) -> int:
+    return loadout_list(kind).size()
+
+
+func in_loadout(kind: String, type: String) -> bool:
+    return loadout_list(kind).has(type)
+
+
+## Взять/снять вид из набора. "added" / "removed" / "full" (лимит 9)
+func toggle_loadout(kind: String, type: String) -> String:
+    var list := loadout_list(kind)
+    if list.has(type):
+        list.erase(type)
+        return "removed"
+    if list.size() >= MAX_LOADOUT:
+        return "full"
+    list.append(type)
+    return "added"
+
+
 # ==================== СБРОС ====================
 
 func reset():
@@ -467,3 +505,6 @@ func reset():
     mutant_star_progress.clear()
     star_feed_progress.clear()
     recycle_points = 0
+    exclusive_anomalies.clear()
+    loadout_anomalies.clear()
+    loadout_mutants.clear()

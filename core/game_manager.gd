@@ -292,6 +292,55 @@ func get_owned_exclusives() -> Array:
         return out
 
 
+## Эксклюзивная аномалия из Чёрного ящика: новый -> коллекция, повтор -> +400 биомассы.
+func grant_exclusive_anomaly(type: String) -> Dictionary:
+        var lab = get_lab_data()
+        var ex := GachaData.get_exclusive_anomaly(type)
+        if ex.is_empty() or lab == null:
+                return {}
+        var status := "new"
+        if lab.exclusive_anomalies.has(type):
+                status = "dup"
+                lab.biomass += 400.0
+        else:
+                lab.exclusive_anomalies.append(type)
+        save_to_active_slot()
+        return {"type": type, "name": str(ex["name"]), "status": status}
+
+
+## Тип эксклюзивной аномалии, заменяющей базовую в бою ("" - обычная версия)
+func owned_anomaly_exclusive_for(base_type: String) -> String:
+        var lab = get_lab_data()
+        if lab == null:
+                return ""
+        for ex in GachaData.EXCLUSIVE_ANOMALIES:
+                if str(ex["base"]) == base_type and lab.exclusive_anomalies.has(str(ex["type"])):
+                        return str(ex["type"])
+        return ""
+
+
+## Автосбор полевого набора: пустые списки заполняются первыми 9 открытыми
+## видами (порядок как в HUD). Вызывается из HUD при входе в бой.
+func ensure_loadout(anomaly_order: Array, mutant_order: Array) -> void:
+        var lab = get_lab_data()
+        if lab == null:
+                return
+        if lab.loadout_anomalies.is_empty():
+                for t in anomaly_order:
+                        if lab.loadout_anomalies.size() >= LabData.MAX_LOADOUT:
+                                break
+                        var art_key := GachaData.get_artifact_for_anomaly(str(t))
+                        if art_key.is_empty() or is_artifact_unlocked(art_key):
+                                lab.loadout_anomalies.append(str(t))
+        if lab.loadout_mutants.is_empty():
+                for t in mutant_order:
+                        if lab.loadout_mutants.size() >= LabData.MAX_LOADOUT:
+                                break
+                        if is_mutant_unlocked(str(t)):
+                                lab.loadout_mutants.append(str(t))
+        save_to_active_slot()
+
+
 # ==================== ГАЧА: КРУТКИ ====================
 
 ## Батч-крутка гачи мутантов: новый -> коллекция, дубль -> копия на ферму.
