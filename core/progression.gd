@@ -18,34 +18,49 @@ signal task_completed(title: String, xp: int, pts: int)
 signal track_changed
 signal toast(text: String)
 
-const DAILY_SLOTS := 4
-const WEEKLY_SLOTS := 3
+const DAILY_SLOTS := 6
+const WEEKLY_SLOTS := 5
 const TRACK_TIERS := 20
 const TIER_COST := 10
+const POOL_VERSION := 2
 
 # ==================== ПУЛЫ ЗАДАЧ ====================
 # key - счётчик прогресса; need - цель; xp/pts - награда за закрытие.
 
 const DAILY_POOL := [
-        {"id": "d_runs", "title": "Сделай 3 забега (любые)", "need": 3, "key": "runs", "xp": 40, "pts": 10},
+        {"id": "d_runs", "title": "Сделай 3 забега в Зону", "need": 3, "key": "runs", "xp": 40, "pts": 10},
+        {"id": "d_runs5", "title": "Сделай 5 забегов в Зону", "need": 5, "key": "runs", "xp": 45, "pts": 12},
         {"id": "d_wins", "title": "Победи в 2 забегах", "need": 2, "key": "wins", "xp": 40, "pts": 10},
         {"id": "d_waves", "title": "Пройди 6 волн выживания", "need": 6, "key": "waves", "xp": 40, "pts": 10},
+        {"id": "d_waves12", "title": "Пройди 12 волн выживания", "need": 12, "key": "waves", "xp": 45, "pts": 12},
         {"id": "d_kills", "title": "Устрани 15 сталкеров", "need": 15, "key": "kills", "xp": 40, "pts": 10},
+        {"id": "d_kills30", "title": "Устрани 30 сталкеров", "need": 30, "key": "kills", "xp": 45, "pts": 12},
         {"id": "d_art", "title": "Добудь 3 артефакта", "need": 3, "key": "artifacts", "xp": 40, "pts": 10},
         {"id": "d_gacha", "title": "Сделай призыв в гаче Зоны", "need": 1, "key": "gacha", "xp": 40, "pts": 10},
+        {"id": "d_gacha5", "title": "Сделай 5 призывов в гаче Зоны", "need": 5, "key": "gacha", "xp": 45, "pts": 12},
         {"id": "d_arena", "title": "Победи на арене выживания", "need": 1, "key": "arena_wins", "xp": 40, "pts": 10},
+        {"id": "d_arena3", "title": "Одержи 3 победы на арене", "need": 3, "key": "arena_wins", "xp": 45, "pts": 12},
         {"id": "d_tower", "title": "Пройди этаж башни", "need": 1, "key": "tower_wins", "xp": 40, "pts": 10},
+        {"id": "d_tower3", "title": "Пройди 3 этажа башни", "need": 3, "key": "tower_wins", "xp": 45, "pts": 12},
+        {"id": "d_camp", "title": "Заверши 2 уровня кампании", "need": 2, "key": "campaign_wins", "xp": 40, "pts": 10},
+        {"id": "d_xp", "title": "Заработай 300 опыта за день", "need": 300, "key": "xp", "xp": 50, "pts": 15},
 ]
 
 const WEEKLY_POOL := [
-        {"id": "w_runs", "title": "Сделай 12 забегов за неделю", "need": 12, "key": "runs", "xp": 120, "pts": 30},
-        {"id": "w_wins", "title": "Победи в 8 забегах за неделю", "need": 8, "key": "wins", "xp": 120, "pts": 30},
-        {"id": "w_waves", "title": "Пройди 25 волн за неделю", "need": 25, "key": "waves", "xp": 120, "pts": 30},
-        {"id": "w_kills", "title": "Устрани 80 сталкеров за неделю", "need": 80, "key": "kills", "xp": 120, "pts": 30},
-        {"id": "w_art", "title": "Добудь 12 артефактов за неделю", "need": 12, "key": "artifacts", "xp": 120, "pts": 30},
+        {"id": "w_runs", "title": "12 забегов за неделю", "need": 12, "key": "runs", "xp": 120, "pts": 30},
+        {"id": "w_runs25", "title": "25 забегов за неделю", "need": 25, "key": "runs", "xp": 140, "pts": 35},
+        {"id": "w_wins", "title": "8 побед за неделю", "need": 8, "key": "wins", "xp": 120, "pts": 30},
+        {"id": "w_waves", "title": "25 волн за неделю", "need": 25, "key": "waves", "xp": 120, "pts": 30},
+        {"id": "w_waves60", "title": "60 волн за неделю", "need": 60, "key": "waves", "xp": 140, "pts": 35},
+        {"id": "w_kills", "title": "80 сталкеров за неделю", "need": 80, "key": "kills", "xp": 120, "pts": 30},
+        {"id": "w_kills200", "title": "200 сталкеров за неделю", "need": 200, "key": "kills", "xp": 140, "pts": 35},
+        {"id": "w_art", "title": "12 артефактов за неделю", "need": 12, "key": "artifacts", "xp": 120, "pts": 30},
         {"id": "w_arena", "title": "5 побед на арене за неделю", "need": 5, "key": "arena_wins", "xp": 120, "pts": 30},
-        {"id": "w_tower", "title": "Пройди 4 этажа башни за неделю", "need": 4, "key": "tower_wins", "xp": 120, "pts": 30},
-        {"id": "w_xp", "title": "Заработай 600 опыта за неделю", "need": 600, "key": "xp", "xp": 150, "pts": 40},
+        {"id": "w_tower", "title": "4 этажа башни за неделю", "need": 4, "key": "tower_wins", "xp": 120, "pts": 30},
+        {"id": "w_tower8", "title": "8 этажей башни за неделю", "need": 8, "key": "tower_wins", "xp": 140, "pts": 35},
+        {"id": "w_camp", "title": "6 уровней кампании за неделю", "need": 6, "key": "campaign_wins", "xp": 120, "pts": 30},
+        {"id": "w_gacha", "title": "15 призывов в гаче за неделю", "need": 15, "key": "gacha", "xp": 120, "pts": 30},
+        {"id": "w_xp", "title": "600 опыта за неделю", "need": 600, "key": "xp", "xp": 150, "pts": 40},
 ]
 
 # ==================== СЛУЖЕБНОЕ ====================
@@ -162,6 +177,10 @@ func _quests() -> Dictionary:
 func _ensure_quests(q: Dictionary) -> void:
         var dk := _day_key()
         var wk := _week_key()
+        if int(q.get("pv", 0)) != POOL_VERSION:
+                q["pv"] = POOL_VERSION
+                q["day"] = ""
+                q["week"] = ""
         if str(q.get("day", "")) != dk:
                 q["day"] = dk
                 q["dprog"] = {}

@@ -3848,7 +3848,7 @@ func _build_tasks_ui():
         root.add_theme_constant_override("separation", 8)
         tasks_panel.add_child(root)
 
-        # ---- Шапка: НАЗАД + заголовок + уровень сталкера ----
+        # ---- Шапка: НАЗАД + заголовок + уровень лаборанта ----
         var head := HBoxContainer.new()
         head.add_theme_constant_override("separation", 16)
         root.add_child(head)
@@ -3883,14 +3883,7 @@ func _build_tasks_ui():
         var lvl_card := _tasks_level_card()
         head.add_child(lvl_card)
 
-        # ---- Очки трека ----
-        var pts_row := HBoxContainer.new()
-        pts_row.add_theme_constant_override("separation", 14)
-        root.add_child(pts_row)
-        _tasks_points_label = BunkerUI.make_mono_label("", 15, BunkerUI.HAZARD_BRIGHT)
-        pts_row.add_child(_tasks_points_label)
-
-        # ---- Контент: слева задачи (скролл), справа трек ----
+        # ---- Контент: задачи на всю ширину (скролл) ----
         var body := HBoxContainer.new()
         body.size_flags_vertical = Control.SIZE_EXPAND_FILL
         body.add_theme_constant_override("separation", 18)
@@ -3907,25 +3900,29 @@ func _build_tasks_ui():
         _tasks_lists_box.add_theme_constant_override("separation", 10)
         left_scroll.add_child(_tasks_lists_box)
 
-        var right_box := VBoxContainer.new()
-        right_box.custom_minimum_size = Vector2(430, 0)
-        right_box.add_theme_constant_override("separation", 10)
-        body.add_child(right_box)
+        # ---- Низ окна: очки трека + ТРЕК НАГРАД + шкала + ЛЕНТА СУНДУКОВ ----
+        var pts_row := HBoxContainer.new()
+        pts_row.add_theme_constant_override("separation", 14)
+        root.add_child(pts_row)
+        _tasks_points_label = BunkerUI.make_mono_label("", 15, BunkerUI.HAZARD_BRIGHT)
+        _tasks_points_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        pts_row.add_child(_tasks_points_label)
 
         var track_head := Label.new()
         track_head.text = "ТРЕК НАГРАД"
         track_head.add_theme_font_override("font", BunkerUI.font_title())
         track_head.add_theme_font_size_override("font_size", 20)
         track_head.add_theme_color_override("font_color", BunkerUI.GREEN)
-        right_box.add_child(track_head)
+        pts_row.add_child(track_head)
 
         _tasks_track_sub = BunkerUI.make_mono_label("", 13, BunkerUI.TEXT_DIM)
-        right_box.add_child(_tasks_track_sub)
+        root.add_child(_tasks_track_sub)
 
         var track_scroll := ScrollContainer.new()
-        track_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+        track_scroll.custom_minimum_size = Vector2(0, 170)
+        track_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
         track_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-        right_box.add_child(track_scroll)
+        root.add_child(track_scroll)
 
         _tasks_track_row = HBoxContainer.new()
         _tasks_track_row.add_theme_constant_override("separation", 10)
@@ -4017,7 +4014,7 @@ func _refresh_tasks_panel():
         var lvl := Prog.level()
         var xp := Prog.xp_in_level()
         var need := Prog.xp_need(lvl)
-        _tasks_level_value.text = "УРОВЕНЬ СТАЛКЕРА: %d" % lvl
+        _tasks_level_value.text = "УРОВЕНЬ ЛАБОРАНТА: %d" % lvl
         _tasks_level_bar.max_value = need
         _tasks_level_bar.value = xp
         _tasks_level_sub.text = "опыт %d / %d до ур. %d · всего %d" % [xp, need, lvl + 1, Prog.xp_total()]
@@ -4049,6 +4046,9 @@ func _tasks_track_bar_max(m: int, v: int) -> void:
                 _tasks_track_bar.add_theme_stylebox_override("background", _tasks_bar_bg())
                 _tasks_track_bar.add_theme_stylebox_override("fill", _tasks_bar_fill(BunkerUI.HAZARD))
                 _tasks_track_sub.get_parent().add_child.call_deferred(_tasks_track_bar)
+                _tasks_track_sub.get_parent().move_child.call_deferred(_tasks_track_bar, _tasks_track_sub.get_index() + 1)
+                _tasks_track_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+                _tasks_track_bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
         _tasks_track_bar.max_value = m
         _tasks_track_bar.value = v
 
@@ -4254,4 +4254,4 @@ func _prog_late_story():
 
 
 func _on_prog_level_up(lvl: int):
-        _show_message("НОВЫЙ УРОВЕНЬ СТАЛКЕРА: %d" % lvl, 2.6)
+        _show_message("НОВЫЙ УРОВЕНЬ ЛАБОРАНТА: %d" % lvl, 2.6)

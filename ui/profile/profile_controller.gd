@@ -172,7 +172,7 @@ func _build_header() -> void:
         BunkerUI.style_button(back, "steel", 18)
         back.pressed.connect(_on_back_pressed)
         back.mouse_entered.connect(_play_hover_sound)
-        # Уровень сталкера: плашка УР + шкала опыта (Prog)
+        # Уровень лаборанта: плашка УР + шкала опыта (Prog)
         var lvl_card := PanelContainer.new()
         var lsb := StyleBoxFlat.new()
         lsb.bg_color = BunkerUI.STEEL_HI
@@ -1807,7 +1807,7 @@ class HexBadge:
                                                 Color(light, 0.55 * sin(yy * PI)))
 
 
-# ==================== УРОВЕНЬ СТАЛКЕРА (прогрессия Prog) ====================
+# ==================== УРОВЕНЬ ЛАБОРАНТА (прогрессия Prog) ====================
 
 var _prog_plate_hooked := false
 
