@@ -1,0 +1,68 @@
+
+[gd_scene load_steps=11 format=3 uid="uid://main_scene"]
+
+[ext_resource type="Script" path="res://terrain/map_bootstrap.gd" id="10"]
+[ext_resource type="Script" path="res://zones/zone_controller.gd" id="1"]
+[ext_resource type="PackedScene" path="res://zones/monolith/monolith.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://entities/stalkers/stalker_spawner.tscn" id="3"]
+[ext_resource type="PackedScene" path="res://ui/hud/hud.tscn" id="4"]
+[ext_resource type="Script" path="res://terrain/terrain_generator.gd" id="5"]
+[ext_resource type="Script" path="res://scripts/game_camera.gd" id="6"]
+[ext_resource type="PackedScene" path="res://entities/stalkers/novice_stalker.tscn" id="7"]
+[ext_resource type="PackedScene" path="res://entities/stalkers/veteran_stalker.tscn" id="8"]
+[ext_resource type="PackedScene" path="res://entities/stalkers/master_stalker.tscn" id="9"]
+
+[sub_resource type="Environment" id="Environment_1"]
+background_mode = 1
+background_color = Color(0.09, 0.1, 0.13, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.35, 0.37, 0.45, 1)
+ambient_light_energy = 1.0
+tonemap_mode = 3
+ssao_enabled = true
+glow_enabled = true
+glow_intensity = 0.55
+glow_bloom = 0.06
+glow_hdr_threshold = 1.05
+fog_enabled = true
+fog_light_color = Color(0.45, 0.5, 0.58, 1)
+fog_density = 0.012
+fog_sky_affect = 0.12
+
+[node name="Main" type="Node3D"]
+
+[node name="MapBootstrap" type="Node" parent="."]
+script = ExtResource("10")
+
+[node name="ZoneController" type="Node" parent="."]
+script = ExtResource("1")
+novice_stalker_scene = ExtResource("7")
+veteran_stalker_scene = ExtResource("8")
+master_stalker_scene = ExtResource("9")
+
+[node name="TerrainGenerator" type="Node3D" parent="."]
+script = ExtResource("5")
+
+[node name="Monolith" parent="." instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="StalkerSpawner" parent="." instance=ExtResource("3")]
+
+[node name="HUD" parent="." instance=ExtResource("4")]
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 10, 0)
+light_color = Color(1, 0.95, 0.9, 1)
+light_energy = 1.2
+shadow_enabled = true
+light_angular_distance = 0.02
+shadow_blur = 1.4
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+groups=["world_environment"]
+environment = SubResource("Environment_1")
+
+[node name="GameCamera" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 20, 20, 20)
+current = true
+script = ExtResource("6")

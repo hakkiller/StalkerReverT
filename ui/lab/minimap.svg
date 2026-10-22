@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1000" viewBox="0 0 1000 1000">
+  <rect width="1000" height="1000" fill="#050805"/>
+  <path d="M100,0V1000 M200,0V1000 M300,0V1000 M400,0V1000 M600,0V1000 M700,0V1000 M800,0V1000 M900,0V1000 M0,100H1000 M0,200H1000 M0,300H1000 M0,400H1000 M0,600H1000 M0,700H1000 M0,800H1000 M0,900H1000" stroke="#0d160d" stroke-width="1"/>
+  <g fill="none" stroke="#2e5c3c" opacity="0.7" stroke-dasharray="3 7">
+    <circle cx="500" cy="500" r="60"/><circle cx="500" cy="500" r="125"/>
+    <circle cx="500" cy="500" r="195"/><circle cx="500" cy="500" r="270"/>
+    <circle cx="500" cy="500" r="350"/>
+  </g>
+  <g font-family="Arial,sans-serif" font-size="16" fill="#57755c" text-anchor="middle" letter-spacing="2">
+    <text x="500" y="432">М</text><text x="500" y="367">Э-1</text><text x="500" y="297">Ж-2</text>
+    <text x="500" y="222">К-3</text><text x="500" y="142">ПЕРИМЕТР</text>
+  </g>
+  <path d="M0,500H1000 M500,0V1000" stroke="#1e3a24" stroke-width="1" stroke-dasharray="1 7"/>
+  <circle cx="500" cy="500" r="40" fill="none" stroke="#52ff8a" stroke-width="2">
+    <animate attributeName="r" values="40;370" dur="4s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.55;0" dur="4s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="500" cy="500" r="40" fill="none" stroke="#52ff8a" stroke-width="2">
+    <animate attributeName="r" values="40;370" dur="4s" begin="1.33s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.55;0" dur="4s" begin="1.33s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="500" cy="500" r="40" fill="none" stroke="#52ff8a" stroke-width="2">
+    <animate attributeName="r" values="40;370" dur="4s" begin="2.66s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.55;0" dur="4s" begin="2.66s" repeatCount="indefinite"/>
+  </circle>
+  <g>
+    <animateTransform attributeName="transform" type="rotate" from="0 500 500" to="360 500 500" dur="12s" repeatCount="indefinite"/>
+    <circle cx="500" cy="500" r="355" fill="none" stroke="#8dffb8" stroke-width="3" stroke-dasharray="150 2080" opacity="0.5"/>
+  </g>
+  <rect x="492" y="492" width="16" height="16" fill="none" stroke="#52ff8a" stroke-width="2"/>
+  <circle cx="500" cy="500" r="4" fill="#ff4646">
+    <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  <text x="60" y="70" font-family="Arial,sans-serif" font-size="20" fill="#3f5c45">51°23'N 30°06'E</text>
+  <text x="940" y="70" text-anchor="end" font-family="Arial,sans-serif" font-size="20" fill="#3f5c45">СЕКТОР 07</text>
+  <g text-anchor="middle" font-family="Impact,'Arial Black',sans-serif">
+    <text x="500" y="905" font-size="60" letter-spacing="16" fill="#ded9c9">STALKER</text>
+    <text x="500" y="965" font-size="44" letter-spacing="28" fill="#52ff8a">REVERT</text>
+  </g>
+</svg>
+

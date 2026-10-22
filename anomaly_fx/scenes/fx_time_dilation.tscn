@@ -1,0 +1,81 @@
+[gd_scene load_steps=11 format=3]
+[ext_resource type="Shader" path="res://anomaly_fx/shaders/ripple_disc.gdshader" id="ext_1"]
+[ext_resource type="Texture2D" path="res://anomaly_fx/textures/spark.png" id="ext_2"]
+[sub_resource type="ShaderMaterial" id="sub_2"]
+shader = ExtResource("ext_1")
+shader_parameter/tint = Color(0.45, 0.7, 1.0, 1.0)
+shader_parameter/speed = 0.9
+shader_parameter/rings = 7.0
+shader_parameter/intensity = 1.2
+
+[sub_resource type="QuadMesh" id="sub_3"]
+size = Vector2(5.0, 5.0)
+
+[sub_resource type="ShaderMaterial" id="sub_4"]
+shader = ExtResource("ext_1")
+shader_parameter/tint = Color(0.55, 0.75, 1.0, 1.0)
+shader_parameter/speed = 0.6
+shader_parameter/rings = 4.0
+shader_parameter/intensity = 0.7
+
+[sub_resource type="SphereMesh" id="sub_5"]
+radius = 2.2
+height = 4.4
+
+[sub_resource type="StandardMaterial3D" id="sub_7"]
+shading_mode = 0
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("ext_2")
+billboard_mode = 3
+disable_receive_shadows = true
+blend_mode = 1
+
+[sub_resource type="Gradient" id="sub_8"]
+offsets = PackedFloat32Array(0.0, 1.0)
+colors = PackedColorArray(0.6, 0.8, 1, 0.8, 0.4, 0.6, 1, 0)
+
+[sub_resource type="ParticleProcessMaterial" id="sub_9"]
+emission_shape = 1
+emission_sphere_radius = 1.8
+direction = Vector3(0, 1, 0)
+spread = 180.0
+initial_velocity_min = 0.2
+initial_velocity_max = 0.5
+gravity = Vector3(0, 0, 0)
+scale_min = 0.015
+scale_max = 0.035
+color_ramp = SubResource("sub_8")
+
+[sub_resource type="QuadMesh" id="sub_10"]
+material = SubResource("sub_7")
+size = Vector2(0.4, 0.4)
+
+[node name="FXTimeDilation" type="Node3D"]
+
+
+[node name="Ripple" type="MeshInstance3D" parent="."]
+mesh = SubResource("sub_3")
+material_override = SubResource("sub_2")
+position = Vector3(0, 0.07, 0)
+rotation = Vector3(-1.5707963267948966, 0, 0)
+
+[node name="Dome" type="MeshInstance3D" parent="."]
+mesh = SubResource("sub_5")
+material_override = SubResource("sub_4")
+position = Vector3(0, 0.4, 0)
+
+[node name="Motes" type="GPUParticles3D" parent="."]
+amount = 30
+lifetime = 2.8
+randomness = 0.7
+explosiveness = 0.0
+local_coords = false
+process_material = SubResource("sub_9")
+draw_pass_1 = SubResource("sub_10")
+visibility_aabb = AABB(-6, -6, -6, 12, 12, 12)
+
+[node name="Glow" type="OmniLight3D" parent="."]
+light_color = Color(0.5, 0.7, 1.0, 1)
+light_energy = 0.8
+omni_range = 7.0
+position = Vector3(0, 1.0, 0)

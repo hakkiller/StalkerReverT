@@ -1,0 +1,15 @@
+{
+  "file": "res://textures/pripyat_heightmap.png",
+  "width_px": 699,
+  "height_px": 514,
+  "elev_min_m": 97.0,
+  "elev_max_m": 159.0,
+  "decode": "elev_m = elev_min_m + gray/255*(elev_max_m-elev_min_m)",
+  "bbox": {
+    "south": 51.38,
+    "west": 30.01,
+    "north": 51.435,
+    "east": 30.13
+  },
+  "source": "Mapzen/AWS Terrain tiles (terrarium), SRTM & other open DEMs"
+}

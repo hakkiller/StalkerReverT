@@ -1,0 +1,307 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1000" viewBox="0 0 1000 1000">
+  <title>STALKER REVERT — Артефакт (финал)</title>
+  <defs>
+    <radialGradient id="bgG" cx="50%" cy="38%" r="80%">
+      <stop offset="0" stop-color="#0d130d"/><stop offset="0.6" stop-color="#060906"/><stop offset="1" stop-color="#030503"/>
+    </radialGradient>
+    <radialGradient id="skyHalo">
+      <stop offset="0" stop-color="#49ff80" stop-opacity="0.14"/><stop offset="0.6" stop-color="#49ff80" stop-opacity="0.05"/><stop offset="1" stop-color="#49ff80" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="artifactGlow">
+      <stop offset="0" stop-color="#d9ffe6" stop-opacity="0.9"/><stop offset="0.35" stop-color="#7dffab" stop-opacity="0.55"/>
+      <stop offset="0.7" stop-color="#1c8a45" stop-opacity="0.22"/><stop offset="1" stop-color="#1c8a45" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="groundPool">
+      <stop offset="0" stop-color="#49ff80" stop-opacity="0.28"/><stop offset="0.6" stop-color="#49ff80" stop-opacity="0.10"/><stop offset="1" stop-color="#49ff80" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="beam" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#49ff80" stop-opacity="0.16"/><stop offset="1" stop-color="#49ff80" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="vig" cx="50%" cy="45%" r="75%">
+      <stop offset="0" stop-color="#000" stop-opacity="0"/><stop offset="0.62" stop-color="#000" stop-opacity="0"/>
+      <stop offset="0.84" stop-color="#000" stop-opacity="0.4"/><stop offset="1" stop-color="#000" stop-opacity="0.92"/>
+    </radialGradient>
+    <filter id="g" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="gBig" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="10" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="soft" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="7"/></filter>
+    <filter id="fGrain" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" stitchTiles="stitch"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.45  0 0 0 0 0.85  0 0 0 0 0.55  0 0 0 0.05 0"/>
+    </filter>
+    <pattern id="scan" width="4" height="4" patternUnits="userSpaceOnUse">
+      <rect width="4" height="1.6" fill="#000" opacity="0.5"/>
+    </pattern>
+
+    <g id="miniTre">
+      <circle r="5" fill="#52ff8a"/>
+      <g stroke="#52ff8a" stroke-width="6.5" fill="none" stroke-linecap="round">
+        <path d="M-6.5,-11.3 A13,13 0 0 1 6.5,-11.3"/>
+        <path d="M-6.5,-11.3 A13,13 0 0 1 6.5,-11.3" transform="rotate(120)"/>
+        <path d="M-6.5,-11.3 A13,13 0 0 1 6.5,-11.3" transform="rotate(240)"/>
+      </g>
+    </g>
+
+    <g id="tree" stroke="#0a0f0a" stroke-width="3" stroke-linecap="round" fill="none">
+      <path d="M0,0 L0,-70 M0,-30 L-18,-52 M0,-30 L14,-58 M0,-48 L-12,-70 M0,-48 L16,-84 M0,-64 L-6,-92"/>
+    </g>
+
+    <g id="dog">
+      <path fill="#0a0e0a" d="M-16,-4 Q-10,-10 -2,-10 Q6,-10 10,-7 L18,-6 L20,-3 L12,-2 L12,0 L9,0 L8,-2 L-6,-2 L-7,0 L-10,0 L-10,-2 L-15,-2 Z"/>
+      <path d="M8,-9 L10,-14 L12,-9 Z" fill="#0a0e0a"/>
+      <path d="M-16,-5 L-22,-10" stroke="#0a0e0a" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="15" cy="-6.5" r="1" fill="#ff4646">
+        <animate attributeName="opacity" values="1;1;0.1;1;1" keyTimes="0;0.85;0.88;0.91;1" dur="4.1s" repeatCount="indefinite"/>
+      </circle>
+    </g>
+  </defs>
+
+  <rect width="1000" height="1000" fill="url(#bgG)"/>
+
+  <!-- ореол в небе -->
+  <circle cx="500" cy="400" r="265" fill="url(#skyHalo)">
+    <animate attributeName="opacity" values="0.6;1;0.6" dur="6s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- дальние холмы -->
+  <path d="M0,700 L0,672 L60,660 L130,676 L210,664 L300,680 L380,668 L470,682 L560,666 L650,678 L740,664 L820,676 L900,664 L1000,676 L1000,700 Z" fill="#090d09"/>
+
+  <!-- руины слева -->
+  <g fill="#0a0d0b">
+    <path d="M60,700 L60,600 L150,600 L150,640 L120,640 L120,700 Z"/>
+    <rect x="76" y="616" width="14" height="18" fill="#050806"/>
+    <rect x="104" y="616" width="14" height="18" fill="#050806"/>
+    <rect x="76" y="654" width="14" height="16" fill="#050806"/>
+  </g>
+
+  <!-- мёртвые деревья -->
+  <use href="#tree" transform="translate(150,700) scale(1.4)"/>
+  <use href="#tree" transform="translate(236,700) scale(0.9)"/>
+  <use href="#tree" transform="translate(908,700) scale(1.2) scale(-1,1)"/>
+
+  <!-- вышка ЛЭП справа -->
+  <g stroke="#0b100c" stroke-width="2.5" fill="none">
+    <path d="M810,700 L838,520 M870,700 L842,520 M820,640 L860,640 M824,600 L856,600 M828,560 L852,560 M836,520 L844,520"/>
+    <path d="M814,668 L866,652 M866,668 L814,652 M818,628 L862,614 M862,628 L818,614"/>
+  </g>
+
+  <!-- мутанты: псы Зоны крадутся за сталкерами -->
+  <use href="#dog" transform="translate(790,700) scale(1.5)"/>
+  <g transform="translate(838,702) scale(-1.45,1.45)">
+    <g>
+      <animateTransform attributeName="transform" type="translate" values="0 0;12 1;0 0" dur="12s" repeatCount="indefinite"/>
+      <use href="#dog"/>
+    </g>
+  </g>
+
+  <!-- земля -->
+  <rect y="696" width="1000" height="4" fill="#131b13"/>
+  <rect y="700" width="1000" height="300" fill="#070a07"/>
+  <g stroke="#0c120c" stroke-width="1" opacity="0.55">
+    <line x1="0" y1="735" x2="1000" y2="735"/><line x1="0" y1="775" x2="1000" y2="775"/>
+    <line x1="0" y1="825" x2="1000" y2="825"/><line x1="0" y1="880" x2="1000" y2="880"/>
+  </g>
+
+  <!-- световое пятно и луч от артефакта -->
+  <ellipse cx="500" cy="702" rx="300" ry="60" fill="url(#groundPool)">
+    <animate attributeName="opacity" values="0.55;0.9;0.55" dur="4s" repeatCount="indefinite"/>
+  </ellipse>
+  <path d="M474,420 L526,420 L645,700 L355,700 Z" fill="url(#beam)">
+    <animate attributeName="opacity" values="0.7;1;0.7" dur="4s" repeatCount="indefinite"/>
+  </path>
+
+  <!-- тлеющие трещины -->
+  <g stroke="#2f9c53" stroke-width="1.4" fill="none">
+    <animate attributeName="opacity" values="0.25;0.5;0.3;0.6;0.25" dur="7s" repeatCount="indefinite"/>
+    <path d="M120,760 L200,742 L260,752 L330,736"/>
+    <path d="M660,758 L720,744 L790,752 L860,738"/>
+    <path d="M420,806 L470,796 L520,806 L575,794"/>
+  </g>
+
+  <!-- тени сталкеров (свет от артефакта) -->
+  <g fill="#000" opacity="0.55" filter="url(#soft)">
+    <ellipse cx="284" cy="774" rx="58" ry="10"/>
+    <ellipse cx="498" cy="790" rx="72" ry="12"/>
+    <ellipse cx="716" cy="772" rx="54" ry="9"/>
+  </g>
+
+  <!-- нити притяжения: Зона тянет артефакт к себе -->
+  <g stroke="#6fae83" stroke-width="1.3" stroke-dasharray="4 9" opacity="0.38">
+    <line x1="340" y1="621" x2="470" y2="447"><animate attributeName="stroke-dashoffset" from="0" to="-130" dur="2.4s" repeatCount="indefinite"/></line>
+    <line x1="470" y1="616" x2="488" y2="455"><animate attributeName="stroke-dashoffset" from="0" to="-130" dur="2.9s" repeatCount="indefinite"/></line>
+    <line x1="540" y1="616" x2="512" y2="455"><animate attributeName="stroke-dashoffset" from="0" to="-130" dur="2.6s" repeatCount="indefinite"/></line>
+    <line x1="759" y1="641" x2="530" y2="452"><animate attributeName="stroke-dashoffset" from="0" to="-130" dur="2.7s" repeatCount="indefinite"/></line>
+  </g>
+
+  <!-- средний туман -->
+  <ellipse cx="500" cy="470" rx="260" ry="90" fill="#0e160e" opacity="0.35" filter="url(#soft)"/>
+
+  <!-- ===== АРТЕФАКТ ===== -->
+  <g transform="translate(500,400)">
+    <circle r="150" fill="url(#artifactGlow)">
+      <animate attributeName="r" values="142;160;142" dur="4s" repeatCount="indefinite"/>
+    </circle>
+    <circle r="70" fill="none" stroke="#52ff8a" stroke-width="2">
+      <animate attributeName="r" values="70;300" dur="5s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.45;0" dur="5s" repeatCount="indefinite"/>
+    </circle>
+    <circle r="70" fill="none" stroke="#52ff8a" stroke-width="2">
+      <animate attributeName="r" values="70;300" dur="5s" begin="2.5s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.45;0" dur="5s" begin="2.5s" repeatCount="indefinite"/>
+    </circle>
+
+    <!-- орбиты с обломками -->
+    <g fill="none" stroke="#52ff8a" opacity="0.5">
+      <g><animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="9s" repeatCount="indefinite"/>
+        <ellipse rx="215" ry="66" stroke-width="1.6" opacity="0.45"/>
+        <g fill="#8dffb8" stroke="none"><circle cx="215" cy="0" r="3"/><circle cx="-186" cy="-33" r="2.2"/><circle cx="0" cy="66" r="2.6"/></g>
+      </g>
+      <g><animateTransform attributeName="transform" type="rotate" from="360" to="0" dur="14s" repeatCount="indefinite"/>
+        <g transform="rotate(60)"><ellipse rx="215" ry="66" stroke-width="1.3" opacity="0.35"/><circle cx="215" cy="0" r="2.4" fill="#8dffb8" stroke="none"/></g>
+      </g>
+      <g><animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="11s" repeatCount="indefinite"/>
+        <g transform="rotate(120)"><ellipse rx="215" ry="66" stroke-width="1.3" opacity="0.3"/><circle cx="0" cy="66" r="2" fill="#8dffb8" stroke="none"/></g>
+      </g>
+    </g>
+
+    <!-- обломки, замороженные на орбите ядра -->
+    <g opacity="0.5" fill="#8dffb8">
+      <animateTransform attributeName="transform" type="rotate" from="360" to="0" dur="18s" repeatCount="indefinite"/>
+      <circle cx="84" cy="0" r="2.4"/><circle cx="0" cy="84" r="2"/><circle cx="-84" cy="0" r="2.6"/><circle cx="0" cy="-84" r="2.2"/>
+    </g>
+
+    <!-- energy-жгуты, текущие внутрь ядра -->
+    <g fill="none" stroke="#8dffb8" stroke-width="1.6" stroke-dasharray="3 9" opacity="0.4">
+      <path d="M-58,225 C-40,205 -46,186 -34,165 C-8,120 -30,95 -20,50"><animate attributeName="stroke-dashoffset" from="0" to="-120" dur="3.2s" repeatCount="indefinite"/></path>
+      <path d="M58,235 C44,210 52,190 36,160 C10,118 34,92 22,48"><animate attributeName="stroke-dashoffset" from="0" to="-120" dur="4.1s" repeatCount="indefinite"/></path>
+    </g>
+
+    <!-- ядро -->
+    <circle r="62" fill="#7dffab" opacity="0.3" filter="url(#gBig)"/>
+    <circle r="34" fill="none" stroke="#1c8a45" stroke-width="1.5" stroke-dasharray="4 6">
+      <animateTransform attributeName="transform" type="rotate" from="0" to="-360" dur="8s" repeatCount="indefinite"/>
+    </circle>
+    <circle r="46" fill="#eaffe9">
+      <animate attributeName="opacity" values="0.85;1;0.85" dur="3s" repeatCount="indefinite"/>
+    </circle>
+    <circle r="26" fill="#ffffff" filter="url(#g)"/>
+
+    <!-- разряды -->
+    <g stroke="#8dffb8" stroke-width="1.4" fill="none" opacity="0.18">
+      <path d="M-70,0 Q-50,-14 -34,-8"/><path d="M70,8 Q52,20 36,12"/>
+    </g>
+    <g stroke="#d9ffe6" stroke-width="2.2" fill="none" filter="url(#g)">
+      <path d="M-58,-6 L-38,-18 L-46,-30 L-26,-40"><animate attributeName="opacity" values="0;0;0.9;0;0;0.75;0;0;0" keyTimes="0;0.5;0.53;0.55;0.7;0.72;0.74;0.9;1" dur="2.9s" repeatCount="indefinite"/></path>
+      <path d="M58,10 L36,2 L44,16 L24,22"><animate attributeName="opacity" values="0.8;0;0;0.9;0;0;0.7;0;0" keyTimes="0;0.02;0.35;0.38;0.41;0.7;0.72;0.75;1" dur="3.7s" repeatCount="indefinite"/></path>
+      <path d="M-6,-56 L6,-40 L-2,-26 L14,-14"><animate attributeName="opacity" values="0;0;0;0.85;0;0;0.6;0;0" keyTimes="0;0.3;0.32;0.35;0.37;0.6;0.62;0.65;1" dur="4.3s" repeatCount="indefinite"/></path>
+    </g>
+  </g>
+
+  <!-- ===== СТАЛКЕРЫ ===== -->
+  <!-- A: стоит, детектор поднят -->
+  <g transform="translate(298,770) scale(2.05)">
+    <g stroke="#050706" stroke-width="4.5" stroke-linecap="round" fill="none">
+      <path d="M-6,0 L-4,-16 M5,0 L7,-16"/>
+      <path d="M8,-41 L17,-58 L19,-67"/>
+      <path d="M-8,-41 L-13,-27 L-12,-15"/>
+    </g>
+    <path d="M-8,-46 Q0,-51 8,-46 L10,-18 L-10,-18 Z" fill="#050706"/>
+    <rect x="-8" y="-42" width="16" height="17" rx="2" fill="#101610" stroke="#1c241c" stroke-width="0.6"/>
+    <circle cy="-53" r="6" fill="#050706"/>
+    <rect x="15" y="-77" width="11" height="9" rx="1" fill="#0a0d0a" stroke="#1e2a1e" stroke-width="0.8"/>
+    <circle cx="20.5" cy="-72.5" r="1.6" fill="#52ff8a"><animate attributeName="opacity" values="0.2;1;0.2" dur="1.8s" repeatCount="indefinite"/></circle>
+    <path d="M26,-77 L29,-89" stroke="#0a0d0a" stroke-width="1.2"/>
+    <g stroke="#52ff8a" stroke-width="1.3" fill="none" opacity="0.35" filter="url(#g)">
+      <path d="M-6,-57 Q0,-61 6,-57"/><path d="M-8,-47 Q0,-52 8,-47"/><path d="M9,-42 L18,-59"/>
+    </g>
+  </g>
+
+  <!-- B: тянется обеими руками -->
+  <g transform="translate(505,786) scale(2.3)">
+    <g stroke="#050706" stroke-width="5" stroke-linecap="round" fill="none">
+      <path d="M-11,0 L-4,-18 M13,0 L5,-18"/>
+      <path d="M-9,-47 L-17,-63 L-15,-73"/>
+      <path d="M9,-47 L17,-63 L15,-73"/>
+    </g>
+    <circle cx="-15" cy="-74" r="2.2" fill="#050706"/><circle cx="15" cy="-74" r="2.2" fill="#050706"/>
+    <path d="M-10,-50 Q0,-56 10,-50 L12,-22 L-12,-22 Z" fill="#050706"/>
+    <path d="M-6,-46 L-6,-24 M6,-46 L6,-24" stroke="#1c241c" stroke-width="1.5"/>
+    <circle cy="-57" r="6.5" fill="#050706"/>
+    <g stroke="#52ff8a" stroke-width="1.3" fill="none" opacity="0.35" filter="url(#g)">
+      <path d="M-7,-61 Q0,-66 7,-61"/><path d="M-10,-51 Q0,-56 10,-51"/>
+      <path d="M-9,-47 L-16,-62"/><path d="M9,-47 L16,-62"/>
+    </g>
+  </g>
+
+  <!-- C: на колене, замеряет детектором -->
+  <g transform="translate(698,768) scale(2.0)">
+    <g stroke="#050706" stroke-width="4.5" stroke-linecap="round" fill="none">
+      <path d="M-6,0 L-4,-16"/>
+      <path d="M8,0 L10,-10 L5,-18"/>
+      <path d="M8,-40 L18,-50 L27,-56"/>
+      <path d="M-8,-41 L-13,-52 L-8,-58"/>
+    </g>
+    <path d="M-9,-44 Q0,-49 9,-44 L10,-18 L-10,-18 Z" fill="#050706"/>
+    <circle cy="-51" r="6" fill="#050706"/>
+    <rect x="25" y="-68" width="11" height="9" rx="1" fill="#0a0d0a" stroke="#1e2a1e" stroke-width="0.8"/>
+    <circle cx="30.5" cy="-63.5" r="1.6" fill="#52ff8a"><animate attributeName="opacity" values="1;0.15;1" dur="2.3s" begin="-0.7s" repeatCount="indefinite"/></circle>
+    <path d="M34,-68 L37,-80" stroke="#0a0d0a" stroke-width="1.2"/>
+    <g stroke="#52ff8a" stroke-width="1.3" fill="none" opacity="0.35" filter="url(#g)">
+      <path d="M-6,-55 Q0,-59 6,-55"/><path d="M9,-41 L18,-51"/>
+    </g>
+  </g>
+
+  <!-- передний туман -->
+  <ellipse cx="500" cy="905" rx="520" ry="60" fill="#0e160e" opacity="0.35" filter="url(#soft)">
+    <animateTransform attributeName="transform" type="translate" values="0 0;40 -5;0 0" dur="28s" repeatCount="indefinite"/>
+  </ellipse>
+  <ellipse cx="280" cy="745" rx="340" ry="48" fill="#0e160e" opacity="0.5" filter="url(#soft)">
+    <animateTransform attributeName="transform" type="translate" values="0 0;46 -6;0 0" dur="26s" repeatCount="indefinite"/>
+  </ellipse>
+  <ellipse cx="760" cy="752" rx="320" ry="44" fill="#0e160e" opacity="0.45" filter="url(#soft)">
+    <animateTransform attributeName="transform" type="translate" values="0 0;-40 8;0 0" dur="31s" repeatCount="indefinite"/>
+  </ellipse>
+
+  <!-- пепел -->
+  <g fill="#9fffc0">
+    <circle cx="140" cy="640" r="1.6"><animate attributeName="opacity" values="0;0.8;0" dur="6s" begin="-1s" repeatCount="indefinite"/><animate attributeName="cy" values="640;520" dur="6s" begin="-1s" repeatCount="indefinite"/></circle>
+    <circle cx="300" cy="600" r="1.2" fill="#d6ffe4"><animate attributeName="opacity" values="0;0.7;0" dur="7.5s" begin="-4s" repeatCount="indefinite"/><animate attributeName="cy" values="600;490" dur="7.5s" begin="-4s" repeatCount="indefinite"/></circle>
+    <circle cx="520" cy="560" r="1.8"><animate attributeName="opacity" values="0;0.75;0" dur="5.5s" begin="-2s" repeatCount="indefinite"/><animate attributeName="cy" values="560;460" dur="5.5s" begin="-2s" repeatCount="indefinite"/></circle>
+    <circle cx="720" cy="620" r="1.4"><animate attributeName="opacity" values="0;0.7;0" dur="6.8s" begin="-5s" repeatCount="indefinite"/><animate attributeName="cy" values="620;500" dur="6.8s" begin="-5s" repeatCount="indefinite"/></circle>
+    <circle cx="880" cy="580" r="1.3" fill="#d6ffe4"><animate attributeName="opacity" values="0;0.65;0" dur="7s" begin="-3s" repeatCount="indefinite"/><animate attributeName="cy" values="580;470" dur="7s" begin="-3s" repeatCount="indefinite"/></circle>
+    <circle cx="60" cy="700" r="1.2"><animate attributeName="opacity" values="0;0.6;0" dur="8s" begin="-6s" repeatCount="indefinite"/><animate attributeName="cy" values="700;610" dur="8s" begin="-6s" repeatCount="indefinite"/></circle>
+    <circle cx="950" cy="720" r="1.5"><animate attributeName="opacity" values="0;0.7;0" dur="6.2s" begin="-2.5s" repeatCount="indefinite"/><animate attributeName="cy" values="720;620" dur="6.2s" begin="-2.5s" repeatCount="indefinite"/></circle>
+  </g>
+
+  <!-- HUD -->
+  <text x="45" y="62" font-family="Arial,sans-serif" font-size="18" fill="#3f5c45" letter-spacing="2">51°23'N 30°06'E · СЕКТОР Д-2</text>
+  <text x="955" y="62" text-anchor="end" font-family="Arial,sans-serif" font-size="18" fill="#7c8a7a" letter-spacing="2">ВЫБРОС: 00:47
+  </text>
+  <line x1="40" y1="110" x2="150" y2="110" stroke="#233023" stroke-width="2"/>
+  <line x1="850" y1="110" x2="960" y2="110" stroke="#233023" stroke-width="2"/>
+  <use href="#miniTre" transform="translate(180,109) scale(0.55)"/>
+  <use href="#miniTre" transform="translate(820,109) scale(0.55)"/>
+  <text x="504" y="118" text-anchor="middle" font-family="Arial,sans-serif" font-size="26" font-weight="bold" letter-spacing="8" fill="#57755c">АРТЕФАКТ НЕ ДОЛЖЕН УЙТИ</text>
+
+  <!-- случайная вспышка -->
+  <rect width="1000" height="1000" fill="#46ff7d" opacity="0">
+    <animate attributeName="opacity" values="0;0;0.05;0;0;0.03;0" keyTimes="0;0.55;0.57;0.6;0.8;0.82;1" dur="9s" repeatCount="indefinite"/>
+  </rect>
+
+  <rect width="1000" height="1000" fill="url(#vig)"/>
+  <rect width="1000" height="1000" fill="url(#scan)" opacity="0.14"/>
+  <rect width="1000" height="1000" filter="url(#fGrain)" opacity="0.85"/>
+
+  <!-- заголовок -->
+  <g text-anchor="middle" font-family="Impact,'Arial Black',sans-serif">
+    <text x="513" y="903" font-size="84" letter-spacing="20" fill="#000" opacity="0.55">STALKER</text>
+    <text x="510" y="900" font-size="84" letter-spacing="20" fill="#ded9c9">STALKER</text>
+    <text x="523" y="961" font-size="52" letter-spacing="40" fill="#0e3a20" filter="url(#soft)">REVERT
+    </text>
+    <text x="520" y="958" font-size="52" letter-spacing="40" fill="#52ff8a" filter="url(#g)">REVERT</text>
+  </g>
+</svg>
+

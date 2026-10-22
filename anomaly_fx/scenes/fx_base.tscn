@@ -1,0 +1,60 @@
+[gd_scene load_steps=9 format=3]
+[ext_resource type="Shader" path="res://anomaly_fx/shaders/electra_sphere.gdshader" id="ext_1"]
+[ext_resource type="Texture2D" path="res://anomaly_fx/textures/soft_glow.png" id="ext_2"]
+[sub_resource type="ShaderMaterial" id="sub_2"]
+shader = ExtResource("ext_1")
+shader_parameter/core_color = Color(0.8, 0.85, 0.9, 1.0)
+shader_parameter/arc_color = Color(1, 1, 1, 1.0)
+shader_parameter/pulse_speed = 1.2
+shader_parameter/arc_speed = 1.5
+shader_parameter/intensity = 0.6
+
+[sub_resource type="SphereMesh" id="sub_3"]
+radius = 0.9
+height = 1.8
+
+[sub_resource type="StandardMaterial3D" id="sub_5"]
+shading_mode = 0
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("ext_2")
+billboard_mode = 3
+disable_receive_shadows = true
+blend_mode = 1
+
+[sub_resource type="Gradient" id="sub_6"]
+offsets = PackedFloat32Array(0.0, 1.0)
+colors = PackedColorArray(0.9, 0.9, 0.95, 0.9, 0.6, 0.6, 0.7, 0)
+
+[sub_resource type="ParticleProcessMaterial" id="sub_7"]
+emission_shape = 1
+emission_sphere_radius = 0.9
+direction = Vector3(0, 1, 0)
+spread = 180.0
+initial_velocity_min = 0.2
+initial_velocity_max = 0.6
+gravity = Vector3(0, 0.3, 0)
+scale_min = 0.02
+scale_max = 0.05
+color_ramp = SubResource("sub_6")
+
+[sub_resource type="QuadMesh" id="sub_8"]
+material = SubResource("sub_5")
+size = Vector2(0.6, 0.6)
+
+[node name="FXBase" type="Node3D"]
+
+
+[node name="Core" type="MeshInstance3D" parent="."]
+mesh = SubResource("sub_3")
+material_override = SubResource("sub_2")
+position = Vector3(0, 0.9, 0)
+
+[node name="Motes" type="GPUParticles3D" parent="."]
+amount = 20
+lifetime = 2.0
+randomness = 0.7
+explosiveness = 0.0
+local_coords = false
+process_material = SubResource("sub_7")
+draw_pass_1 = SubResource("sub_8")
+visibility_aabb = AABB(-6, -6, -6, 12, 12, 12)

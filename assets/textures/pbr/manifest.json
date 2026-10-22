@@ -1,0 +1,205 @@
+{
+  "source": "ambientCG.com",
+  "license": "CC0 1.0 (public domain)",
+  "textures": [
+    {
+      "category": "asphalt_worn",
+      "asset": "Asphalt022",
+      "maps": [
+        "albedo",
+        "ao",
+        "displacement",
+        "normal",
+        "roughness"
+      ]
+    },
+    {
+      "category": "asphalt_old",
+      "asset": "Asphalt006",
+      "maps": [
+        "albedo",
+        "ao",
+        "displacement",
+        "normal",
+        "roughness"
+      ]
+    },
+    {
+      "category": "concrete_wall_dirty",
+      "asset": "Concrete037",
+      "maps": [
+        "albedo",
+        "ao",
+        "displacement",
+        "normal",
+        "roughness"
+      ]
+    },
+    {
+      "category": "concrete_wall_clean",
+      "asset": "Concrete036",
+      "maps": [
+        "albedo",
+        "displacement",
+        "normal",
+        "roughness"
+      ]
+    },
+    {
+      "category": "concrete_floor",
+      "asset": "Concrete041A",
+      "maps": [
+        "albedo",
+        "ao",
+        "displacement",
+        "metalness",
+        "normal",
+        "roughness"
+      ]
+    },
+    {
+      "category": "brick_dark",
+      "asset": "Bricks091",
+      "maps": [
+        "albedo",
+        "ao",
+        "displacement",
+        "normal",
+        "roughness"
+      ]
+    },
+    {
+      "category": "rust_heavy",
+      "asset": "Rust005",
+      "maps": [
+        "albedo",
+        "displacement",
+        "metalness",
+        "normal",
+        "roughness"
+      ]
+    },
+    {
+      "category": "corrugated_rust",
+      "asset": "CorrugatedSteel005",
+      "maps": [
+        "albedo",
+        "ao",
+        "displacement",
+        "metalness",
+        "normal",
+        "roughness"
+      ]
+    },
+    {
+      "category": "corrugated_metal",
+      "asset": "CorrugatedSteel002",
+      "maps": [
+        "albedo",
+        "ao",
+        "displacement",
+        "metalness",
+        "normal",
+        "roughness"
+      ]
+    },
+    {
+      "category": "dirt_dry",
+      "asset": "Ground063",
+      "maps": [
+        "albedo",
+        "ao",
+        "displacement",
+        "normal",
+        "roughness"
+      ]
+    },
+    {
+      "category": "gravel_dirty",
+      "asset": "Gravel025",
+      "maps": [
+        "albedo",
+        "ao",
+        "displacement",
+        "normal",
+        "roughness"
+      ]
+    },
+    {
+      "category": "gravel_fine",
+      "asset": "Gravel015",
+      "maps": [
+        "albedo",
+        "ao",
+        "displacement",
+        "normal",
+        "roughness"
+      ]
+    },
+    {
+      "category": "dead_grass",
+      "asset": "Grass005",
+      "maps": [
+        "albedo",
+        "ao",
+        "displacement",
+        "normal",
+        "roughness"
+      ]
+    },
+    {
+      "category": "wood_planks_old",
+      "asset": "Planks035A",
+      "maps": [
+        "albedo",
+        "ao",
+        "displacement",
+        "metalness",
+        "normal",
+        "roughness"
+      ]
+    },
+    {
+      "category": "plaster_cracked",
+      "asset": "Plaster007",
+      "maps": [
+        "albedo",
+        "ao",
+        "displacement",
+        "normal",
+        "roughness"
+      ]
+    },
+    {
+      "category": "moss",
+      "asset": "Moss002",
+      "maps": [
+        "albedo",
+        "ao",
+        "displacement",
+        "normal",
+        "roughness"
+      ]
+    },
+    {
+      "category": "leak_stains",
+      "asset": "Leaking004",
+      "maps": [
+        "albedo",
+        "displacement",
+        "normal",
+        "roughness"
+      ]
+    },
+    {
+      "category": "leak_stains_2",
+      "asset": "Leaking002",
+      "maps": [
+        "albedo",
+        "displacement",
+        "normal",
+        "roughness"
+      ]
+    }
+  ]
+}

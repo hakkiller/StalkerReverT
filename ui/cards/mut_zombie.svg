@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0" stop-color="#43454f"/><stop offset="0.55" stop-color="#2a2b33"/><stop offset="1" stop-color="#17181d"/>
+</linearGradient>
+<radialGradient id="halo" cx="0.5" cy="0.5" r="0.5">
+<stop offset="0" stop-color="#93959f" stop-opacity="0.5"/><stop offset="1" stop-color="#93959f" stop-opacity="0"/>
+</radialGradient>
+<radialGradient id="vig" cx="0.5" cy="0.42" r="0.75">
+<stop offset="0.55" stop-color="#000000" stop-opacity="0"/><stop offset="1" stop-color="#000000" stop-opacity="0.42"/>
+</radialGradient>
+<linearGradient id="beam" x1="0" y1="0" x2="1" y2="1">
+<stop offset="0" stop-color="#ffffff" stop-opacity="0.10"/><stop offset="0.5" stop-color="#ffffff" stop-opacity="0"/>
+</linearGradient>
+<linearGradient id="metal" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0" stop-color="#e8e8ec"/><stop offset="1" stop-color="#8a8a92"/>
+</linearGradient>
+</defs>
+<rect x="2" y="2" width="124" height="124" rx="14" fill="url(#bg)"/>
+<rect x="2" y="2" width="124" height="124" rx="14" fill="url(#beam)"/><ellipse cx="64" cy="112" rx="40" ry="11" fill="#000000" opacity="0.4"/>
+<ellipse cx="64" cy="90" rx="31" ry="26" fill="#5c6b52"/>
+<ellipse cx="64" cy="98" rx="31" ry="18" fill="#46523d"/>
+<ellipse cx="64" cy="58" rx="21" ry="19" fill="#748562" transform="rotate(-10 64 58)"/>
+<ellipse cx="58" cy="50" rx="10" ry="7" fill="#8a9c74" transform="rotate(-10 58 50)"/>
+<rect x="32" y="70" width="28" height="11" rx="5.5" fill="#5c6b52" transform="rotate(20 46 75)"/>
+<rect x="70" y="70" width="27" height="11" rx="5.5" fill="#4d5943" transform="rotate(-16 83 75)"/>
+<path d="M50 56 L62 63 L76 54" stroke="#39422f" stroke-width="2.6" fill="none"/>
+<path d="M56 74 L58 82 M66 72 L64 80 M74 76 L72 84" stroke="#39422f" stroke-width="2" opacity="0.7"/>
+<circle cx="57" cy="55" r="6" fill="url(#halo)" opacity="0.5"/>
+<circle cx="72" cy="53" r="6" fill="url(#halo)" opacity="0.5"/>
+<circle cx="57" cy="55" r="2.6" fill="#ff6a3c"/><circle cx="72" cy="53" r="2.6" fill="#ff6a3c"/>
+<rect x="2" y="2" width="124" height="124" rx="14" fill="url(#vig)"/>
+<rect x="2.5" y="2.5" width="123" height="123" rx="13" fill="none" stroke="#93959f" stroke-width="3"/>
+<rect x="7" y="7" width="114" height="114" rx="9" fill="none" stroke="#93959f" stroke-width="1" opacity="0.45"/>
+<circle cx="10" cy="10" r="2.2" fill="#93959f"/><circle cx="118" cy="10" r="2.2" fill="#93959f"/>
+<circle cx="10" cy="118" r="2.2" fill="#93959f"/><circle cx="118" cy="118" r="2.2" fill="#93959f"/>
+</svg>
+

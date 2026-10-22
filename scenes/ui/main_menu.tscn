@@ -1,0 +1,204 @@
+[gd_scene format=3 uid="uid://c661hudwpaq0y"]
+
+[ext_resource type="Script" uid="uid://dmq32mgri2a2a" path="res://ui/main_menu/main_menu.gd" id="1_main_menu"]
+
+[node name="MainMenu" type="Control" unique_id=1567188512]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_main_menu")
+
+[node name="ColorRect" type="ColorRect" parent="." unique_id=564295803]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.1, 0.1, 0.12, 1)
+
+[node name="CoverArt" type="TextureRect" parent="." unique_id=1623414956]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Dim" type="ColorRect" parent="." unique_id=274034405]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0.45)
+
+[node name="VBox" type="VBoxContainer" parent="." unique_id=1246393840]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -150.0
+offset_right = 200.0
+offset_bottom = 150.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Title" type="Label" parent="VBox" unique_id=1129240360]
+layout_mode = 2
+text = "STALKER REVERT"
+horizontal_alignment = 1
+
+[node name="Buttons" type="VBoxContainer" parent="VBox" unique_id=505532642]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="NewGameButton" type="Button" parent="VBox/Buttons" unique_id=452736314]
+layout_mode = 2
+size_flags_vertical = 3
+text = "НОВАЯ ИГРА"
+
+[node name="LoadButton" type="Button" parent="VBox/Buttons" unique_id=1501416471]
+layout_mode = 2
+size_flags_vertical = 3
+text = "ЗАГРУЗИТЬ"
+
+[node name="SettingsButton" type="Button" parent="VBox/Buttons" unique_id=184102316]
+layout_mode = 2
+size_flags_vertical = 3
+text = "НАСТРОЙКИ"
+
+[node name="QuitButton" type="Button" parent="VBox/Buttons" unique_id=1466560021]
+layout_mode = 2
+size_flags_vertical = 3
+text = "ВЫХОД"
+
+[node name="LoadScreen" type="Control" parent="." unique_id=1072427907]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="Panel" parent="LoadScreen" unique_id=500371781]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -200.0
+offset_right = 300.0
+offset_bottom = 200.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBox" type="VBoxContainer" parent="LoadScreen/Panel" unique_id=1685020610]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Title" type="Label" parent="LoadScreen/Panel/VBox" unique_id=447989286]
+layout_mode = 2
+text = "ЗАГРУЗКА СОХРАНЕНИЯ"
+horizontal_alignment = 1
+
+[node name="SaveSlots" type="VBoxContainer" parent="LoadScreen/Panel/VBox" unique_id=575278966]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="BackButton" type="Button" parent="LoadScreen/Panel/VBox" unique_id=1220355391]
+layout_mode = 2
+text = "НАЗАД"
+
+[node name="SettingsScreen" type="Control" parent="." unique_id=655918052]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="Panel" parent="SettingsScreen" unique_id=1039174329]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -172.0
+offset_right = 200.0
+offset_bottom = 195.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="SettingsTitle" type="Label" parent="SettingsScreen/Panel" unique_id=1082976445]
+layout_mode = 0
+offset_top = 15.0
+offset_right = 400.0
+offset_bottom = 40.0
+text = "НАСТРОЙКИ"
+horizontal_alignment = 1
+
+[node name="MusicLabel" type="Label" parent="SettingsScreen/Panel" unique_id=771558882]
+layout_mode = 0
+offset_left = 30.0
+offset_top = 60.0
+offset_right = 200.0
+offset_bottom = 85.0
+text = "Музыка"
+
+[node name="MusicSlider" type="HSlider" parent="SettingsScreen/Panel" unique_id=936445632]
+layout_mode = 0
+offset_left = 30.0
+offset_top = 95.0
+offset_right = 370.0
+offset_bottom = 115.0
+max_value = 1.0
+step = 0.05
+value = 0.7
+
+[node name="SfxLabel" type="Label" parent="SettingsScreen/Panel" unique_id=1367849825]
+layout_mode = 0
+offset_left = 30.0
+offset_top = 135.0
+offset_right = 200.0
+offset_bottom = 160.0
+text = "Звуки"
+
+[node name="SfxSlider" type="HSlider" parent="SettingsScreen/Panel" unique_id=253357684]
+layout_mode = 0
+offset_left = 30.0
+offset_top = 170.0
+offset_right = 370.0
+offset_bottom = 190.0
+max_value = 1.0
+step = 0.05
+value = 0.8
+
+[node name="BackButton" type="Button" parent="SettingsScreen/Panel" unique_id=117264549]
+layout_mode = 0
+offset_left = 150.0
+offset_top = 240.0
+offset_right = 250.0
+offset_bottom = 270.0
+text = "НАЗАД"

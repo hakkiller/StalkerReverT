@@ -1,0 +1,30 @@
+[gd_scene load_steps=5 format=3 uid="uid://acid_anomaly"]
+[ext_resource type="PackedScene" path="res://anomaly_fx/scenes/fx_acid_pool.tscn" id="2_fx"]
+
+[ext_resource type="Script" path="res://anomalies/acid_anomaly.gd" id="1"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_acid"]
+radius = 5.0
+
+[sub_resource type="SphereMesh" id="SphereMesh_acid"]
+radius = 5.0
+height = 10.0
+
+[sub_resource type="StandardMaterial3D" id="Material_acid"]
+albedo_color = Color(0.8, 1, 0, 1)
+emission_enabled = true
+emission = Color(0.8, 1, 0, 1)
+emission_energy_multiplier = 2.0
+
+[node name="AcidAnomaly" type="Area3D"]
+script = ExtResource("1")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("SphereShape3D_acid")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+visible = false
+mesh = SubResource("SphereMesh_acid")
+material_override = SubResource("Material_acid")
+
+[node name="FX" parent="." instance=ExtResource("2_fx")]

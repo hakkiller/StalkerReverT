@@ -1,0 +1,11 @@
+[gd_scene load_steps=2 format=3 uid="uid://stalker_spawner"]
+
+[ext_resource type="Script" path="res://entities/stalkers/stalker_spawner.gd" id="1"]
+
+[node name="StalkerSpawner" type="Node3D"]
+script = ExtResource("1")
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+target_desired_distance = 2.0
+path_desired_distance = 1.0
+path_max_distance = 1000.0

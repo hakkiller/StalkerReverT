@@ -1,0 +1,20 @@
+[gd_scene load_steps=4 format=3 uid="uid://pseudodog"]
+
+[ext_resource type="Script" path="res://entities/mutants/pseudodog.gd" id="1"]
+[ext_resource type="PackedScene" path="res://entities/mutants/base_mutant.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://models/animals/pseudodog_anim.glb" id="3_model"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1"]
+albedo_color = Color(0.5, 0.5, 0.5, 1)
+
+[node name="Pseudodog" instance=ExtResource("2")]
+script = ExtResource("1")
+editable_children = true
+
+[node name="MeshInstance3D" parent="." index="1"]
+material_override = SubResource("StandardMaterial3D_1")
+
+[node name="Model" parent="." instance=ExtResource("3_model")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]

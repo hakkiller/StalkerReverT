@@ -1,0 +1,238 @@
+[gd_scene load_steps=22 format=3]
+[ext_resource type="Script" path="res://anomaly_fx/scripts/showcase_camera.gd" id="ext_1"]
+[ext_resource type="PackedScene" path="res://anomaly_fx/scenes/fx_base.tscn" id="ext_2"]
+[ext_resource type="PackedScene" path="res://anomaly_fx/scenes/fx_electra.tscn" id="ext_3"]
+[ext_resource type="PackedScene" path="res://anomaly_fx/scenes/fx_tesla.tscn" id="ext_4"]
+[ext_resource type="PackedScene" path="res://anomaly_fx/scenes/fx_vortex.tscn" id="ext_5"]
+[ext_resource type="PackedScene" path="res://anomaly_fx/scenes/fx_whirlwind.tscn" id="ext_6"]
+[ext_resource type="PackedScene" path="res://anomaly_fx/scenes/fx_gravity_lift.tscn" id="ext_7"]
+[ext_resource type="PackedScene" path="res://anomaly_fx/scenes/fx_fry.tscn" id="ext_8"]
+[ext_resource type="PackedScene" path="res://anomaly_fx/scenes/fx_comet.tscn" id="ext_9"]
+[ext_resource type="PackedScene" path="res://anomaly_fx/scenes/fx_steam.tscn" id="ext_10"]
+[ext_resource type="PackedScene" path="res://anomaly_fx/scenes/fx_acid_pool.tscn" id="ext_11"]
+[ext_resource type="PackedScene" path="res://anomaly_fx/scenes/fx_acid_cloud.tscn" id="ext_12"]
+[ext_resource type="PackedScene" path="res://anomaly_fx/scenes/fx_gas.tscn" id="ext_13"]
+[ext_resource type="PackedScene" path="res://anomaly_fx/scenes/fx_jelly.tscn" id="ext_14"]
+[ext_resource type="PackedScene" path="res://anomaly_fx/scenes/fx_burning_fluff.tscn" id="ext_15"]
+[ext_resource type="PackedScene" path="res://anomaly_fx/scenes/fx_radiation.tscn" id="ext_16"]
+[ext_resource type="PackedScene" path="res://anomaly_fx/scenes/fx_teleport.tscn" id="ext_17"]
+[ext_resource type="PackedScene" path="res://anomaly_fx/scenes/fx_time_dilation.tscn" id="ext_18"]
+[sub_resource type="StandardMaterial3D" id="sub_1"]
+albedo_color = Color(0.09, 0.1, 0.11, 1)
+
+[sub_resource type="PlaneMesh" id="sub_2"]
+size = Vector2(90, 30)
+
+[sub_resource type="Environment" id="sub_3"]
+background_mode = 1
+background_color = Color(0.02, 0.025, 0.035, 1)
+fog_enabled = true
+fog_light_color = Color(0.1, 0.11, 0.13, 1)
+fog_density = 0.012
+tonemap_mode = 2
+
+[node name="Showcase" type="Node3D"]
+
+[node name="Floor" type="MeshInstance3D" parent="."]
+mesh = SubResource("sub_2")
+material_override = SubResource("sub_1")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+rotation = Vector3(-0.9, 0.5, 0.1)
+position = Vector3(0, 20, 0)
+light_color = Color(0.5, 0.55, 0.62, 1)
+light_energy = 0.35
+
+[node name="WorldEnv" type="WorldEnvironment" parent="."]
+environment = SubResource("sub_3")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+script = ExtResource("ext_1")
+position = Vector3(0, 8, 26)
+
+[node name="Fx_base" parent="." instance=ExtResource("ext_2")]
+position = Vector3(-28.0, 0, 8.0)
+
+[node name="L0" type="Label3D" parent="."]
+text = "base"
+position = Vector3(-28.0, 3.6, 8.0)
+modulate = Color(0.75, 0.8, 0.85, 1)
+font_size = 48
+outline_size = 10
+billboard = 1
+
+[node name="Fx_electra" parent="." instance=ExtResource("ext_3")]
+position = Vector3(-20.0, 0, 8.0)
+
+[node name="L1" type="Label3D" parent="."]
+text = "electra"
+position = Vector3(-20.0, 3.6, 8.0)
+modulate = Color(0.75, 0.8, 0.85, 1)
+font_size = 48
+outline_size = 10
+billboard = 1
+
+[node name="Fx_tesla" parent="." instance=ExtResource("ext_4")]
+position = Vector3(-12.0, 0, 8.0)
+
+[node name="L2" type="Label3D" parent="."]
+text = "tesla"
+position = Vector3(-12.0, 3.6, 8.0)
+modulate = Color(0.75, 0.8, 0.85, 1)
+font_size = 48
+outline_size = 10
+billboard = 1
+
+[node name="Fx_vortex" parent="." instance=ExtResource("ext_5")]
+position = Vector3(-4.0, 0, 8.0)
+
+[node name="L3" type="Label3D" parent="."]
+text = "vortex"
+position = Vector3(-4.0, 3.6, 8.0)
+modulate = Color(0.75, 0.8, 0.85, 1)
+font_size = 48
+outline_size = 10
+billboard = 1
+
+[node name="Fx_whirlwind" parent="." instance=ExtResource("ext_6")]
+position = Vector3(4.0, 0, 8.0)
+
+[node name="L4" type="Label3D" parent="."]
+text = "whirlwind"
+position = Vector3(4.0, 3.6, 8.0)
+modulate = Color(0.75, 0.8, 0.85, 1)
+font_size = 48
+outline_size = 10
+billboard = 1
+
+[node name="Fx_gravity_lift" parent="." instance=ExtResource("ext_7")]
+position = Vector3(12.0, 0, 8.0)
+
+[node name="L5" type="Label3D" parent="."]
+text = "gravity_lift"
+position = Vector3(12.0, 3.6, 8.0)
+modulate = Color(0.75, 0.8, 0.85, 1)
+font_size = 48
+outline_size = 10
+billboard = 1
+
+[node name="Fx_fry" parent="." instance=ExtResource("ext_8")]
+position = Vector3(20.0, 0, 8.0)
+
+[node name="L6" type="Label3D" parent="."]
+text = "fry"
+position = Vector3(20.0, 3.6, 8.0)
+modulate = Color(0.75, 0.8, 0.85, 1)
+font_size = 48
+outline_size = 10
+billboard = 1
+
+[node name="Fx_comet" parent="." instance=ExtResource("ext_9")]
+position = Vector3(28.0, 0, 8.0)
+
+[node name="L7" type="Label3D" parent="."]
+text = "comet"
+position = Vector3(28.0, 3.6, 8.0)
+modulate = Color(0.75, 0.8, 0.85, 1)
+font_size = 48
+outline_size = 10
+billboard = 1
+
+[node name="Fx_steam" parent="." instance=ExtResource("ext_10")]
+position = Vector3(-28.0, 0, 0.0)
+
+[node name="L8" type="Label3D" parent="."]
+text = "steam"
+position = Vector3(-28.0, 3.6, 0.0)
+modulate = Color(0.75, 0.8, 0.85, 1)
+font_size = 48
+outline_size = 10
+billboard = 1
+
+[node name="Fx_acid_pool" parent="." instance=ExtResource("ext_11")]
+position = Vector3(-20.0, 0, 0.0)
+
+[node name="L9" type="Label3D" parent="."]
+text = "acid_pool"
+position = Vector3(-20.0, 3.6, 0.0)
+modulate = Color(0.75, 0.8, 0.85, 1)
+font_size = 48
+outline_size = 10
+billboard = 1
+
+[node name="Fx_acid_cloud" parent="." instance=ExtResource("ext_12")]
+position = Vector3(-12.0, 0, 0.0)
+
+[node name="L10" type="Label3D" parent="."]
+text = "acid_cloud"
+position = Vector3(-12.0, 3.6, 0.0)
+modulate = Color(0.75, 0.8, 0.85, 1)
+font_size = 48
+outline_size = 10
+billboard = 1
+
+[node name="Fx_gas" parent="." instance=ExtResource("ext_13")]
+position = Vector3(-4.0, 0, 0.0)
+
+[node name="L11" type="Label3D" parent="."]
+text = "gas"
+position = Vector3(-4.0, 3.6, 0.0)
+modulate = Color(0.75, 0.8, 0.85, 1)
+font_size = 48
+outline_size = 10
+billboard = 1
+
+[node name="Fx_jelly" parent="." instance=ExtResource("ext_14")]
+position = Vector3(4.0, 0, 0.0)
+
+[node name="L12" type="Label3D" parent="."]
+text = "jelly"
+position = Vector3(4.0, 3.6, 0.0)
+modulate = Color(0.75, 0.8, 0.85, 1)
+font_size = 48
+outline_size = 10
+billboard = 1
+
+[node name="Fx_burning_fluff" parent="." instance=ExtResource("ext_15")]
+position = Vector3(12.0, 0, 0.0)
+
+[node name="L13" type="Label3D" parent="."]
+text = "burning_fluff"
+position = Vector3(12.0, 3.6, 0.0)
+modulate = Color(0.75, 0.8, 0.85, 1)
+font_size = 48
+outline_size = 10
+billboard = 1
+
+[node name="Fx_radiation" parent="." instance=ExtResource("ext_16")]
+position = Vector3(20.0, 0, 0.0)
+
+[node name="L14" type="Label3D" parent="."]
+text = "radiation"
+position = Vector3(20.0, 3.6, 0.0)
+modulate = Color(0.75, 0.8, 0.85, 1)
+font_size = 48
+outline_size = 10
+billboard = 1
+
+[node name="Fx_teleport" parent="." instance=ExtResource("ext_17")]
+position = Vector3(28.0, 0, 0.0)
+
+[node name="L15" type="Label3D" parent="."]
+text = "teleport"
+position = Vector3(28.0, 3.6, 0.0)
+modulate = Color(0.75, 0.8, 0.85, 1)
+font_size = 48
+outline_size = 10
+billboard = 1
+
+[node name="Fx_time_dilation" parent="." instance=ExtResource("ext_18")]
+position = Vector3(-28.0, 0, -8.0)
+
+[node name="L16" type="Label3D" parent="."]
+text = "time_dilation"
+position = Vector3(-28.0, 3.6, -8.0)
+modulate = Color(0.75, 0.8, 0.85, 1)
+font_size = 48
+outline_size = 10
+billboard = 1

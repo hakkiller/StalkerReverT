@@ -1,0 +1,20 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://entities/stalkers/base_stalker.tscn" id="1"]
+[ext_resource type="PackedScene" path="res://models/мастер.fbx" id="3_model"]
+[ext_resource type="Script" path="res://entities/stalkers/master_stalker.gd" id="2"]
+
+[node name="MasterStalker" instance=ExtResource("1")]
+script = ExtResource("2")
+editable_children = true
+
+[node name="Visual" parent="."]
+visible = false
+
+[node name="Model" parent="." instance=ExtResource("3_model")]
+transform = Transform3D(-1.0, 0, 0, 0, 1.0, 0, 0, 0, -1.0, 0, 0.27, 0)
+
+[node name="Label3D" parent="." index="4"]
+text = "MASTER"
+font_size = 56
+outline_size = 3

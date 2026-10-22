@@ -1,0 +1,676 @@
+[gd_scene format=3 uid="uid://lab"]
+
+[ext_resource type="Script" path="res://ui/lab/lab_controller.gd" id="1_lab_controller"]
+[ext_resource type="Script" path="res://ui/panels/upgrade_panel.gd" id="2_upgrade_panel"]
+[ext_resource type="Script" path="res://ui/panels/storage_panel.gd" id="3_storage_panel"]
+[ext_resource type="Script" path="res://ui/panels/result_panel.gd" id="4_result_panel"]
+
+[node name="Lab" type="Control" unique_id=1687029437]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_lab_controller")
+
+[node name="Background" type="ColorRect" parent="." unique_id=729756800]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.1, 0.12, 0.15, 1)
+
+[node name="CoverArt" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = null
+expand_mode = 1
+stretch_mode = 6
+
+[node name="VBox" type="VBoxContainer" parent="." unique_id=1099973283]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 10
+
+[node name="Header" type="HBoxContainer" parent="VBox" unique_id=503281637]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="VBox/Header" unique_id=2027225234]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "ЛАБОРАТОРНЫЙ КОМПЛЕКС"
+horizontal_alignment = 1
+
+[node name="RunNumber" type="Label" parent="VBox/Header" unique_id=851449379]
+layout_mode = 2
+text = "День 1"
+
+[node name="InfoPanel" type="PanelContainer" parent="VBox" unique_id=1298940468]
+layout_mode = 2
+
+[node name="HBox" type="HBoxContainer" parent="VBox/InfoPanel" unique_id=1646135266]
+layout_mode = 2
+
+[node name="InfoLabel" type="Label" parent="VBox/InfoPanel/HBox" unique_id=1161697384]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "ИНФОРМАЦИЯ О ЗАБЕГЕ"
+
+[node name="BiomassLabel" type="Label" parent="VBox/InfoPanel/HBox" unique_id=1202147418]
+layout_mode = 2
+text = "Биомасса: "
+
+[node name="BiomassValue" type="Label" parent="VBox/InfoPanel/HBox" unique_id=1655598860]
+layout_mode = 2
+text = "0"
+
+[node name="StartRunButton" type="Button" parent="VBox/InfoPanel" unique_id=1169496646]
+layout_mode = 2
+text = "НАЧАТЬ НОВЫЙ ЗАБЕГ"
+
+[node name="Stations" type="HBoxContainer" parent="VBox" unique_id=840897145]
+layout_mode = 2
+size_flags_vertical = 0
+custom_minimum_size = Vector2(0, 175)
+theme_override_constants/separation = 12
+
+[node name="AnomalyStation" type="Button" parent="VBox/Stations" unique_id=136749369]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.33
+text = ""
+
+[node name="StationName" type="Label" parent="VBox/Stations/AnomalyStation" unique_id=769103795]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -60.0
+offset_top = -30.0
+offset_right = 60.0
+offset_bottom = -10.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_font_sizes/font_size = 20
+text = "АНОМАЛИИ"
+horizontal_alignment = 1
+
+[node name="StationLevel" type="Label" parent="VBox/Stations/AnomalyStation" unique_id=217728421]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -30.0
+offset_top = -5.0
+offset_right = 30.0
+offset_bottom = 15.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_font_sizes/font_size = 16
+text = "Ур.0"
+horizontal_alignment = 1
+
+[node name="MutantStation" type="Button" parent="VBox/Stations" unique_id=2100000026]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.33
+text = ""
+
+[node name="StationName" type="Label" parent="VBox/Stations/MutantStation" unique_id=1163299845]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -60.0
+offset_top = -30.0
+offset_right = 60.0
+offset_bottom = -10.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_font_sizes/font_size = 20
+text = "МУТАНТЫ"
+horizontal_alignment = 1
+
+[node name="StationLevel" type="Label" parent="VBox/Stations/MutantStation" unique_id=737033022]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -30.0
+offset_top = -5.0
+offset_right = 30.0
+offset_bottom = 15.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_font_sizes/font_size = 16
+text = "Ур.0"
+horizontal_alignment = 1
+
+[node name="MonolithStation" type="Button" parent="VBox/Stations" unique_id=1684277104]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.33
+text = ""
+
+[node name="StationName" type="Label" parent="VBox/Stations/MonolithStation" unique_id=1262906922]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -60.0
+offset_top = -30.0
+offset_right = 60.0
+offset_bottom = -10.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_font_sizes/font_size = 20
+text = "МОНОЛИТ"
+horizontal_alignment = 1
+
+[node name="StationLevel" type="Label" parent="VBox/Stations/MonolithStation" unique_id=11301602]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -30.0
+offset_top = -5.0
+offset_right = 30.0
+offset_bottom = 15.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_font_sizes/font_size = 16
+text = "Ур.0"
+horizontal_alignment = 1
+
+[node name="StoragePanel" type="PanelContainer" parent="VBox" unique_id=818533677]
+layout_mode = 2
+
+[node name="HBox" type="HBoxContainer" parent="VBox/StoragePanel" unique_id=993100887]
+layout_mode = 2
+
+[node name="StorageLabel" type="Label" parent="VBox/StoragePanel/HBox" unique_id=202765341]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "ХРАНИЛИЩЕ АРТЕФАКТОВ"
+
+[node name="ArtifactCounts" type="Label" parent="VBox/StoragePanel/HBox" unique_id=1275997144]
+layout_mode = 2
+text = "Common: 0   Rare: 0   Legendary: 0"
+
+[node name="OpenStorageButton" type="Button" parent="VBox/StoragePanel" unique_id=1884352419]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 48)
+theme_override_font_sizes/font_size = 16
+text = "ОТКРЫТЬ ХРАНИЛИЩЕ"
+
+[node name="StatsPanel" type="PanelContainer" parent="VBox" unique_id=1504504298]
+layout_mode = 2
+
+[node name="StatsLabel" type="Label" parent="VBox/StatsPanel" unique_id=170435326]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Всего забегов: 0   Побед: 0   Поражений: 0
+Сталкеров убито: 0   Артефактов украдено: 0"
+
+[node name="Spacer" type="Control" parent="VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="PrimaryActions" type="HBoxContainer" parent="VBox"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="BottomButtons" type="HBoxContainer" parent="VBox" unique_id=2032821775]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="MenuButton" type="Button" parent="VBox/BottomButtons" unique_id=1920276815]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 62)
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 18
+text = "ГЛАВНОЕ МЕНЮ"
+
+[node name="SettingsButton" type="Button" parent="VBox/BottomButtons" unique_id=414624332]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 62)
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 18
+text = "НАСТРОЙКИ"
+
+[node name="SettingsScreen" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+
+[node name="Shade" type="ColorRect" parent="SettingsScreen"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.6)
+
+[node name="Panel" type="Panel" parent="SettingsScreen"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -150.0
+offset_right = 200.0
+offset_bottom = 195.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="SettingsTitle" type="Label" parent="SettingsScreen/Panel"]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 15.0
+offset_right = 400.0
+offset_bottom = 40.0
+text = "НАСТРОЙКИ"
+horizontal_alignment = 1
+
+[node name="MusicLabel" type="Label" parent="SettingsScreen/Panel"]
+layout_mode = 0
+offset_left = 30.0
+offset_top = 60.0
+offset_right = 200.0
+offset_bottom = 85.0
+text = "Музыка"
+
+[node name="MusicSlider" type="HSlider" parent="SettingsScreen/Panel"]
+layout_mode = 0
+offset_left = 30.0
+offset_top = 95.0
+offset_right = 370.0
+offset_bottom = 115.0
+max_value = 1.0
+step = 0.05
+value = 0.7
+
+[node name="SfxLabel" type="Label" parent="SettingsScreen/Panel"]
+layout_mode = 0
+offset_left = 30.0
+offset_top = 135.0
+offset_right = 200.0
+offset_bottom = 160.0
+text = "Звуки"
+
+[node name="SfxSlider" type="HSlider" parent="SettingsScreen/Panel"]
+layout_mode = 0
+offset_left = 30.0
+offset_top = 170.0
+offset_right = 370.0
+offset_bottom = 190.0
+max_value = 1.0
+step = 0.05
+value = 0.8
+
+[node name="BackButton" type="Button" parent="SettingsScreen/Panel"]
+layout_mode = 0
+offset_left = 150.0
+offset_top = 240.0
+offset_right = 250.0
+offset_bottom = 270.0
+text = "НАЗАД"
+
+[node name="ShopButton" type="Button" parent="VBox/BottomButtons" unique_id=445293369]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 62)
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 18
+text = "МАГАЗИН"
+
+[node name="SaveButton" type="Button" parent="VBox/BottomButtons" unique_id=445293368]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 62)
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 18
+text = "СОХРАНИТЬ"
+
+[node name="ShopPanel" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+
+[node name="Shade" type="ColorRect" parent="ShopPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.6)
+
+[node name="Panel" type="Panel" parent="ShopPanel"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -280.0
+offset_top = -210.0
+offset_right = 280.0
+offset_bottom = 210.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ShopTitle" type="Label" parent="ShopPanel/Panel"]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 10.0
+offset_right = 560.0
+offset_bottom = 35.0
+text = "МАГАЗИН ЗОНЫ - припасы для забега"
+horizontal_alignment = 1
+
+[node name="ShopBiomass" type="Label" parent="ShopPanel/Panel"]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 36.0
+offset_right = 560.0
+offset_bottom = 56.0
+text = "Биомасса лаборатории: 0"
+horizontal_alignment = 1
+
+[node name="MutantsHeader" type="Label" parent="ShopPanel/Panel"]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 68.0
+offset_right = 540.0
+offset_bottom = 88.0
+text = "МУТАНТЫ (вступят в бой в начале забега)"
+
+[node name="MutantGrid" type="GridContainer" parent="ShopPanel/Panel"]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 92.0
+offset_right = 540.0
+offset_bottom = 230.0
+columns = 3
+
+[node name="ArtifactsHeader" type="Label" parent="ShopPanel/Panel"]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 240.0
+offset_right = 540.0
+offset_bottom = 260.0
+text = "АРТЕФАКТЫ (приманка у монолита в забеге)"
+
+[node name="ArtifactGrid" type="GridContainer" parent="ShopPanel/Panel"]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 264.0
+offset_right = 540.0
+offset_bottom = 356.0
+columns = 2
+
+[node name="ShopClose" type="Button" parent="ShopPanel/Panel"]
+layout_mode = 0
+offset_left = 200.0
+offset_top = 366.0
+offset_right = 360.0
+offset_bottom = 401.0
+text = "НАЗАД"
+
+[node name="UpgradePanel" type="Control" parent="." unique_id=1648802834]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("2_upgrade_panel")
+
+[node name="Shade" type="ColorRect" parent="UpgradePanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.6)
+
+[node name="Panel" type="Panel" parent="UpgradePanel" unique_id=265332345]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -350.0
+offset_top = -250.0
+offset_right = 350.0
+offset_bottom = 250.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Margin" type="MarginContainer" parent="UpgradePanel/Panel" unique_id=1763258381]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="VBox" type="VBoxContainer" parent="UpgradePanel/Panel/Margin" unique_id=1004227082]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="UpgradePanel/Panel/Margin/VBox" unique_id=1136017030]
+layout_mode = 2
+text = "СТАНЦИЯ"
+horizontal_alignment = 1
+
+[node name="UpgradesContainer" type="VBoxContainer" parent="UpgradePanel/Panel/Margin/VBox" unique_id=2132965075]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="BackButton" type="Button" parent="UpgradePanel/Panel/Margin/VBox" unique_id=859428039]
+layout_mode = 2
+text = "НАЗАД"
+
+[node name="StoragePanel" type="Control" parent="." unique_id=304282893]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("3_storage_panel")
+
+[node name="Shade" type="ColorRect" parent="StoragePanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.6)
+
+[node name="Panel" type="Panel" parent="StoragePanel" unique_id=1777116015]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -400.0
+offset_top = -300.0
+offset_right = 400.0
+offset_bottom = 300.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Margin" type="MarginContainer" parent="StoragePanel/Panel" unique_id=789605584]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="VBox" type="VBoxContainer" parent="StoragePanel/Panel/Margin" unique_id=1904463230]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="StoragePanel/Panel/Margin/VBox" unique_id=780629131]
+layout_mode = 2
+text = "ХРАНИЛИЩЕ АРТЕФАКТОВ"
+horizontal_alignment = 1
+
+[node name="Tabs" type="TabContainer" parent="StoragePanel/Panel/Margin/VBox" unique_id=1968931071]
+layout_mode = 2
+size_flags_vertical = 3
+current_tab = 0
+
+[node name="Common" type="GridContainer" parent="StoragePanel/Panel/Margin/VBox/Tabs" unique_id=981605213]
+layout_mode = 2
+metadata/_tab_index = 0
+
+[node name="Rare" type="GridContainer" parent="StoragePanel/Panel/Margin/VBox/Tabs" unique_id=1173809446]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 1
+
+[node name="Legendary" type="GridContainer" parent="StoragePanel/Panel/Margin/VBox/Tabs" unique_id=1883795782]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 2
+
+[node name="BiomassLabel" type="Label" parent="StoragePanel/Panel/Margin/VBox" unique_id=1639817532]
+layout_mode = 2
+text = "Биомасса: 0"
+
+[node name="BackButton" type="Button" parent="StoragePanel/Panel/Margin/VBox" unique_id=732528944]
+layout_mode = 2
+text = "НАЗАД"
+
+[node name="ResultPanel" type="Control" parent="." unique_id=56600579]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("4_result_panel")
+
+[node name="Shade" type="ColorRect" parent="ResultPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.6)
+
+[node name="Panel" type="Panel" parent="ResultPanel" unique_id=2844269]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -260.0
+offset_right = 300.0
+offset_bottom = 260.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Margin" type="MarginContainer" parent="ResultPanel/Panel" unique_id=1618649256]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 30
+theme_override_constants/margin_top = 30
+theme_override_constants/margin_right = 30
+theme_override_constants/margin_bottom = 30
+
+[node name="VBox" type="VBoxContainer" parent="ResultPanel/Panel/Margin" unique_id=1668864139]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="ResultPanel/Panel/Margin/VBox" unique_id=1125302991]
+layout_mode = 2
+text = "ИТОГИ ЗАБЕГА"
+horizontal_alignment = 1
+
+[node name="ResultLabel" type="Label" parent="ResultPanel/Panel/Margin/VBox" unique_id=283269962]
+layout_mode = 2
+text = "ПОБЕДА"
+horizontal_alignment = 1
+
+[node name="RewardLabel" type="Label" parent="ResultPanel/Panel/Margin/VBox" unique_id=6206305]
+layout_mode = 2
+text = "Получено биомассы: 0"
+horizontal_alignment = 1
+
+[node name="StatsLabel" type="Label" parent="ResultPanel/Panel/Margin/VBox" unique_id=1316849715]
+layout_mode = 2
+text = "Сталкеров убито: 0"
+
+[node name="ArtifactsLabel" type="Label" parent="ResultPanel/Panel/Margin/VBox" unique_id=1266622749]
+visible = false
+layout_mode = 2
+text = "Собрано артефактов:"
+
+[node name="ContinueButton" type="Button" parent="ResultPanel/Panel/Margin/VBox" unique_id=1878362002]
+layout_mode = 2
+text = "ПРОДОЛЖИТЬ"

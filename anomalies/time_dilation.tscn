@@ -1,0 +1,30 @@
+[gd_scene load_steps=5 format=3 uid="uid://time_dilation"]
+[ext_resource type="PackedScene" path="res://anomaly_fx/scenes/fx_time_dilation.tscn" id="2_fx"]
+
+[ext_resource type="Script" path="res://anomalies/time_dilation.gd" id="1"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_time"]
+radius = 6.0
+
+[sub_resource type="SphereMesh" id="SphereMesh_time"]
+radius = 6.0
+height = 12.0
+
+[sub_resource type="StandardMaterial3D" id="Material_time"]
+albedo_color = Color(0.6, 0.3, 0.8, 1)
+emission_enabled = true
+emission = Color(0.6, 0.3, 0.8, 1)
+emission_energy_multiplier = 2.5
+
+[node name="TimeDilation" type="Area3D"]
+script = ExtResource("1")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("SphereShape3D_time")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+visible = false
+mesh = SubResource("SphereMesh_time")
+material_override = SubResource("Material_time")
+
+[node name="FX" parent="." instance=ExtResource("2_fx")]

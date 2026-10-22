@@ -1,0 +1,84 @@
+[gd_scene load_steps=13 format=3]
+[ext_resource type="Shader" path="res://anomaly_fx/shaders/fire_billboard.gdshader" id="ext_1"]
+[ext_resource type="Shader" path="res://anomaly_fx/shaders/electra_sphere.gdshader" id="ext_2"]
+[ext_resource type="Texture2D" path="res://anomaly_fx/textures/soft_glow.png" id="ext_3"]
+[ext_resource type="Script" path="res://anomaly_fx/scripts/fx_flicker.gd" id="ext_4"]
+[sub_resource type="ShaderMaterial" id="sub_2"]
+shader = ExtResource("ext_1")
+shader_parameter/col_low = Color(0.9, 0.2, 0.05, 1.0)
+shader_parameter/col_high = Color(1.0, 0.75, 0.3, 1.0)
+shader_parameter/speed = 1.8
+shader_parameter/intensity = 1.7
+
+[sub_resource type="QuadMesh" id="sub_3"]
+size = Vector2(1.6, 1.6)
+
+[sub_resource type="ShaderMaterial" id="sub_5"]
+shader = ExtResource("ext_2")
+shader_parameter/core_color = Color(0.15, 0.1, 0.05, 1.0)
+shader_parameter/arc_color = Color(1.0, 0.5, 0.1, 1.0)
+shader_parameter/pulse_speed = 3.0
+shader_parameter/arc_speed = 5.0
+shader_parameter/intensity = 0.8
+
+[sub_resource type="SphereMesh" id="sub_6"]
+radius = 0.5
+height = 1.0
+
+[sub_resource type="StandardMaterial3D" id="sub_8"]
+shading_mode = 0
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("ext_3")
+billboard_mode = 3
+disable_receive_shadows = true
+blend_mode = 1
+
+[sub_resource type="Gradient" id="sub_9"]
+offsets = PackedFloat32Array(0.0, 0.7, 1.0)
+colors = PackedColorArray(1, 0.75, 0.35, 1, 1, 0.4, 0.1, 0.8, 0.5, 0.1, 0, 0)
+
+[sub_resource type="ParticleProcessMaterial" id="sub_10"]
+emission_shape = 1
+emission_sphere_radius = 0.6
+direction = Vector3(0, 1, 0)
+spread = 55.0
+initial_velocity_min = 0.4
+initial_velocity_max = 1.1
+gravity = Vector3(0, 1.2, 0)
+scale_min = 0.02
+scale_max = 0.06
+color_ramp = SubResource("sub_9")
+
+[sub_resource type="QuadMesh" id="sub_11"]
+material = SubResource("sub_8")
+size = Vector2(0.6, 0.6)
+
+[node name="FXBurningFluff" type="Node3D"]
+
+
+[node name="Fire" type="MeshInstance3D" parent="."]
+mesh = SubResource("sub_3")
+material_override = SubResource("sub_2")
+position = Vector3(0, 1.0, 0)
+
+[node name="Core" type="MeshInstance3D" parent="."]
+mesh = SubResource("sub_6")
+material_override = SubResource("sub_5")
+position = Vector3(0, 0.9, 0)
+
+[node name="Fluff" type="GPUParticles3D" parent="."]
+amount = 50
+lifetime = 2.4
+randomness = 0.7
+explosiveness = 0.0
+local_coords = false
+process_material = SubResource("sub_10")
+draw_pass_1 = SubResource("sub_11")
+visibility_aabb = AABB(-6, -6, -6, 12, 12, 12)
+
+[node name="Glow" type="OmniLight3D" parent="."]
+light_color = Color(1.0, 0.55, 0.2, 1)
+light_energy = 1.8
+omni_range = 6.0
+script = ExtResource("ext_4")
+position = Vector3(0, 1.0, 0)

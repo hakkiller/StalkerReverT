@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0" stop-color="#43454f"/><stop offset="0.55" stop-color="#2a2b33"/><stop offset="1" stop-color="#17181d"/>
+</linearGradient>
+<radialGradient id="halo" cx="0.5" cy="0.5" r="0.5">
+<stop offset="0" stop-color="#93959f" stop-opacity="0.5"/><stop offset="1" stop-color="#93959f" stop-opacity="0"/>
+</radialGradient>
+<radialGradient id="vig" cx="0.5" cy="0.42" r="0.75">
+<stop offset="0.55" stop-color="#000000" stop-opacity="0"/><stop offset="1" stop-color="#000000" stop-opacity="0.42"/>
+</radialGradient>
+<linearGradient id="beam" x1="0" y1="0" x2="1" y2="1">
+<stop offset="0" stop-color="#ffffff" stop-opacity="0.10"/><stop offset="0.5" stop-color="#ffffff" stop-opacity="0"/>
+</linearGradient>
+<linearGradient id="metal" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0" stop-color="#e8e8ec"/><stop offset="1" stop-color="#8a8a92"/>
+</linearGradient>
+</defs>
+<rect x="2" y="2" width="124" height="124" rx="14" fill="url(#bg)"/>
+<rect x="2" y="2" width="124" height="124" rx="14" fill="url(#beam)"/><ellipse cx="64" cy="112" rx="42" ry="12" fill="#000000" opacity="0.4"/>
+<ellipse cx="64" cy="74" rx="42" ry="31" fill="#a8504e"/>
+<path d="M26 70 Q30 52 48 48 Q60 44 74 48 Q94 52 100 66 Q102 76 96 82 Q80 92 60 92 Q40 92 30 82 Q24 76 26 70 Z" fill="#b85555"/>
+<ellipse cx="46" cy="62" rx="13" ry="10" fill="#d97f78"/>
+<ellipse cx="80" cy="84" rx="11" ry="8" fill="#8a3b3c"/>
+<ellipse cx="90" cy="62" rx="8" ry="6" fill="#c96b64"/>
+<circle cx="64" cy="76" r="8" fill="#f2e6c9"/><circle cx="66" cy="74" r="4" fill="#2c2320"/>
+<circle cx="66" cy="73" r="1.6" fill="#ffffff"/>
+<path d="M38 78 Q44 74 50 78 M74 58 Q80 54 86 58" stroke="#8a3b3c" stroke-width="2.2" fill="none" opacity="0.8"/>
+<rect x="2" y="2" width="124" height="124" rx="14" fill="url(#vig)"/>
+<rect x="2.5" y="2.5" width="123" height="123" rx="13" fill="none" stroke="#93959f" stroke-width="3"/>
+<rect x="7" y="7" width="114" height="114" rx="9" fill="none" stroke="#93959f" stroke-width="1" opacity="0.45"/>
+<circle cx="10" cy="10" r="2.2" fill="#93959f"/><circle cx="118" cy="10" r="2.2" fill="#93959f"/>
+<circle cx="10" cy="118" r="2.2" fill="#93959f"/><circle cx="118" cy="118" r="2.2" fill="#93959f"/>
+</svg>
+

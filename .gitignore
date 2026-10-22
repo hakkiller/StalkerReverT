@@ -1,0 +1,11 @@
+# Godot 4
+.godot/
+*.translation
+
+# Android gradle build output
+android/build/
+android/.gradle/
+
+# System junk
+.DS_Store
+*.tmp

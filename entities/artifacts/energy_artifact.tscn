@@ -1,0 +1,27 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://entities/artifacts/energy_artifact.gd" id="1"]
+[ext_resource type="PackedScene" path="res://entities/artifacts/base_artifact.tscn" id="2"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_energy"]
+radius = 0.35
+height = 0.7
+
+[sub_resource type="StandardMaterial3D" id="Material_energy"]
+albedo_color = Color(0.2, 0.8, 1.0, 1)
+emission_enabled = true
+emission = Color(0.2, 0.8, 1.0, 1)
+emission_energy_multiplier = 1.5
+metallic = 0.3
+roughness = 0.2
+
+[node name="EnergyArtifact" instance=ExtResource("2")]
+script = ExtResource("1")
+
+[node name="MeshInstance3D" parent="." index="0"]
+mesh = SubResource("SphereMesh_energy")
+material_override = SubResource("Material_energy")
+
+[node name="OmniLight3D" parent="." index="1"]
+light_color = Color(0.2, 0.8, 1.0, 1)
+light_energy = 3.0
