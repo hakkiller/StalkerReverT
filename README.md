@@ -1,6 +1,6 @@
 # STALKER REVERT · «Сталкер наоборот»
 
-![version](https://img.shields.io/badge/версия-v0.19.0_«БАЗАР»-b48cff) ![engine](https://img.shields.io/badge/Godot-4.6.1-478cbf) ![platform](https://img.shields.io/badge/платформы-Windows_·_Android-9aa89a)
+![version](https://img.shields.io/badge/версия-v0.20.0_«ПРАВО ВЫБОРА»-b48cff) ![engine](https://img.shields.io/badge/Godot-4.6.1-478cbf) ![platform](https://img.shields.io/badge/платформы-Windows_·_Android-9aa89a)
 
 Стратегия в реальном времени, где игрок управляет **самой Зоной**. Сталкеры приходят на территорию, чтобы украсть артефакты, а Зона защищается: создаёт аномалии, призывает мутантов, управляет ресурсами и устраивает выбросы.
 
@@ -14,6 +14,7 @@
 
 | Версия | Имя | Бины |
 |---|---|---|
+| [v0.20.0](https://github.com/hakkiller/StalkerReverT/releases/tag/v0.20.0) | «ПРАВО ВЫБОРА» — приз на выбор за 20 супер-круток; топ арены по волнам | ПК · APK |
 | [v0.16.0](https://github.com/hakkiller/StalkerReverT/releases/tag/v0.16.0) | «Геофизик» | ПК · APK |
 | [v0.18.0](https://github.com/hakkiller/StalkerReverT/releases/tag/v0.18.0) | «СУПЕР-ПРИЗЫВ» — супер-гача: 6 эксклюзивов Чёрных ящиков + бонус 60 круток | ПК · APK |
 | [v0.19.0](https://github.com/hakkiller/StalkerReverT/releases/tag/v0.19.0) | «БАЗАР» — очки сезона: магазин СЕЗОН (эксклюзивы ЧЯ за СП, крутки, био, копии) + ОБМЕННИК (артефакты выбросов и био → СП); фикс счётчиков арен-побед | ПК · APK |

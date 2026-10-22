@@ -86,6 +86,10 @@ var campaign_level_reached: int = 1
 # (каждые GachaData.SUPER_PITY обычных призывов = +1 супер-крутка).
 @export var super_pull_progress: int = 0
 @export var super_pulls: int = 0
+# Приз на выбор: прогресс супер-призывов (каждые GachaData.SUPER_CHOICE_PITY)
+# и накопленные выборы - игрок сам указывает эксклюзив вместо рандома.
+@export var super_choice_progress: int = 0
+@export var super_choice_tokens: int = 0
 
 # Хранилище артефактов
 @export var artifacts_common: Array[Dictionary] = []
@@ -520,6 +524,8 @@ func reset():
     season_points = 0
     super_pull_progress = 0
     super_pulls = 0
+    super_choice_progress = 0
+    super_choice_tokens = 0
     exclusive_anomalies.clear()
     loadout_anomalies.clear()
     loadout_mutants.clear()

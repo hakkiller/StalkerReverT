@@ -440,10 +440,48 @@ func spin_super_gacha(times: int) -> Array:
                                 lab.exclusive_anomalies.append(str(roll["type"]))
                                 roll["status"] = "new"
                 results.append(roll)
+                # ПРИЗ НА ВЫБОР: каждая супер-крутка приближает бесплатный выбор приза
+                lab.super_choice_progress += 1
+                if lab.super_choice_progress >= GachaData.SUPER_CHOICE_PITY:
+                        lab.super_choice_progress = 0
+                        lab.super_choice_tokens += 1
         lab.super_pulls -= times
         save_to_active_slot()
         return results
 
+
+## ПРИЗ НА ВЫБОР: за каждые 20 супер-призывов игрок сам называет эксклюзив
+## Чёрного ящика (kind: mut|art). Выбор без рандома: дубль мутанта -> копия
+## на ферму, дубль аномалии -> +400 биомассы (как в супер-призыве).
+## ПРИЗ НА ВЫБОР: за каждые 20 супер-призывов игрок сам называет эксклюзив
+## Чёрного ящика (kind: mut|art). Выбор без рандома: дубль мутанта -> копия
+## на ферму, дубль аномалии -> +400 биомассы (как в супер-призыве).
+func claim_super_choice(kind: String, type: String) -> Dictionary:
+        if not current_save_data or not current_save_data.lab_data:
+                return {}
+        var lab = current_save_data.lab_data
+        if int(lab.super_choice_tokens) <= 0:
+                return {}
+        if kind == "mut" and GachaData.get_exclusive(type).is_empty():
+                return {}
+        if kind != "mut" and GachaData.get_exclusive_anomaly(type).is_empty():
+                return {}
+        lab.super_choice_tokens -= 1
+        var roll: Dictionary = {"kind": kind, "type": type, "rarity": "legendary", "status": "new"}
+        if kind == "mut":
+                if lab.unlocked_mutants.has(type):
+                        lab.add_farm_copy(type)
+                        roll["status"] = "dup"
+                else:
+                        lab.unlocked_mutants.append(type)
+        else:
+                if lab.exclusive_anomalies.has(type):
+                        roll["status"] = "dup"
+                        lab.biomass += 400.0
+                else:
+                        lab.exclusive_anomalies.append(type)
+        save_to_active_slot()
+        return roll
 
 ## Скормить копию ДРУГОГО типа как корм: очки по редкости корма.
 ## Корм должен быть с тем же числом звёзд, что у цели (звёздная пирамида)

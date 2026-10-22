@@ -3452,17 +3452,6 @@ func _make_arena_foe_row(foe: Dictionary, is_me: bool) -> Control:
         who.add_child(cl)
         h.add_child(who)
 
-        # Сила
-        var pw := VBoxContainer.new()
-        pw.add_theme_constant_override("separation", 0)
-        var pv := BunkerUI.make_mono_label(_format_number(float(foe.get("power", 0))), 20, BunkerUI.GREEN)
-        pv.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-        var pl2 := BunkerUI.make_mono_label("СИЛА", 11, BunkerUI.TEXT_FAINT)
-        pl2.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-        pw.add_child(pv)
-        pw.add_child(pl2)
-        h.add_child(pw)
-
         # Волна
         var wv := VBoxContainer.new()
         wv.add_theme_constant_override("separation", 0)
@@ -3477,6 +3466,18 @@ func _make_arena_foe_row(foe: Dictionary, is_me: bool) -> Control:
         wv.add_child(wv1)
         wv.add_child(wv2)
         h.add_child(wv)
+
+        # Сила
+        var pw := VBoxContainer.new()
+        pw.add_theme_constant_override("separation", 0)
+        var pv := BunkerUI.make_mono_label(_format_number(float(foe.get("power", 0))), 20, BunkerUI.GREEN)
+        pv.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+        var pl2 := BunkerUI.make_mono_label("СИЛА", 11, BunkerUI.TEXT_FAINT)
+        pl2.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+        pw.add_child(pv)
+        pw.add_child(pl2)
+        h.add_child(pw)
+
 
         # Кнопка
         var call_btn := Button.new()
@@ -3639,10 +3640,15 @@ func _rebuild_arena_panel():
                 losses = statistics.losses
                 kills = statistics.stalkers_killed
 
-        # Зал славы: сортировка по реальной силе, моё место
+        # Зал славы: ранжируем по ВОЛНАМ выживания (кто дальше прошёл), сила - тай-брейк; моё место
         var board: Array = _arena_rivals.duplicate()
         board.append({"name": "СТАЛКЕР (ВЫ)", "power": _arena_player_power(), "wave": rec})
-        board.sort_custom(func(a, b): return int(a.get("power", 0)) > int(b.get("power", 0)))
+        board.sort_custom(func(a, b):
+                var wa := int(a.get("wave", 0))
+                var wb := int(b.get("wave", 0))
+                if wa == wb:
+                        return int(a.get("power", 0)) > int(b.get("power", 0))
+                return wa > wb)
         var my_place := 1
         for i in range(board.size()):
                 if str(board[i].get("name", "")).begins_with("СТАЛКЕР"):
@@ -3692,7 +3698,7 @@ func _rebuild_arena_panel():
                         for e in board:
                                 _arena_board_box.add_child(_make_arena_board_row(
                                         "%d. %s" % [place, str(e.get("name", ""))],
-                                        "%s · волна %d" % [_format_number(float(e.get("power", 0))), int(e.get("wave", 1))],
+                                        "волна %d · сила %s" % [int(e.get("wave", 1)), _format_number(float(e.get("power", 0)))],
                                         str(e.get("name", "")).begins_with("СТАЛКЕР")))
                                 place += 1
                 2:

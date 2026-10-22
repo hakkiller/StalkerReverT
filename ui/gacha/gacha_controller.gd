@@ -31,6 +31,11 @@ var _tries_label: Label
 var _chances_label: Label
 var _spin1_btn: Button
 var _spin10_btn: Button
+# ПРИЗ НА ВЫБОР: кнопка супер-рукава + оверлей выбора из шести эксклюзивов
+var _choice_btn: Button
+var _choice_overlay: Control
+var _choice_box: GridContainer
+var _choice_title: Label
 # Коллекция (оверлей)
 var _coll_overlay: Control
 var _coll_box: GridContainer
@@ -64,6 +69,7 @@ func _ready() -> void:
         _build_strips()
         _build_bottom()
         _build_collection_overlay()
+        _build_choice_overlay()
         _build_toast()
 
         _game_manager = get_tree().get_first_node_in_group("game_manager")
@@ -263,6 +269,23 @@ func _build_bottom() -> void:
         _chances_label.offset_top = -104
         _chances_label.offset_bottom = -34
         add_child(_chances_label)
+        
+        # ПРИЗ НА ВЫБОР (супер-рукав): слева снизу, правее НАЗАД
+        _choice_btn = Button.new()
+        _choice_btn.text = "ПРИЗ НА ВЫБОР"
+        _choice_btn.custom_minimum_size = Vector2(320, 70)
+        _choice_btn.anchor_left = 0.0
+        _choice_btn.anchor_right = 0.0
+        _choice_btn.anchor_top = 1.0
+        _choice_btn.anchor_bottom = 1.0
+        _choice_btn.offset_left = 156
+        _choice_btn.offset_right = 476
+        _choice_btn.offset_top = -108
+        _choice_btn.offset_bottom = -38
+        BunkerUI.style_button(_choice_btn, "steel", 15)
+        _choice_btn.pressed.connect(_on_choice_open)
+        _choice_btn.mouse_entered.connect(_play_hover_sound)
+        add_child(_choice_btn)
 
 
 func _build_collection_overlay() -> void:
@@ -608,7 +631,7 @@ func _refresh_bottom() -> void:
         _spin10_btn.text = "СУПЕР-ПРИЗЫВ  ×10" if _arm == "super" else "ПРИЗЫВ  ×10"
         var prog: int = int(lab.super_pull_progress) if lab else 0
         if _arm == "super":
-                _tries_label.text = "Супер-крутки: %d · бонус обычных призывов: %d/%d" % [rolls, prog, GachaData.SUPER_PITY]
+                _tries_label.text = "Супер-крутки: %d · бонус обычных: %d/%d · ВЫБОР приза: %d/%d" % [rolls, prog, GachaData.SUPER_PITY, int(lab.super_choice_progress) if lab else 0, GachaData.SUPER_CHOICE_PITY]
         elif _arm == "mutants":
                 var to_guarantee: int = maxi(GachaData.CHIMERA_GUARANTEE_LEVEL - _level(), 0)
                 if to_guarantee > 0:
@@ -621,13 +644,24 @@ func _refresh_bottom() -> void:
         # Шансы
         var w := GachaData.rarity_weights(_level())
         if _arm == "super":
-                _chances_label.text = "пул: 3 эксклюзивных мутанта + 3 эксклюзивные аномалии\n+1 супер-крутка за каждые %d обычных призывов" % GachaData.SUPER_PITY
+                _chances_label.text = "пул: 3 эксклюзивных мутанта + 3 эксклюзивные аномалии\n+1 супер-крутка за каждые %d обычных призывов\n+1 ПРИЗ НА ВЫБОР за каждые %d супер-призывов" % [GachaData.SUPER_PITY, GachaData.SUPER_CHOICE_PITY]
         elif _arm == "mutants":
                 _chances_label.text = "шансы: %d%% обычный · %d%% необычный · %d%% редкий · %d%% легенда\n+1 крутка за 10-ю и 30-ю волну выживания" % [
                         roundi(w["common"]), roundi(w["uncommon"]), roundi(w["rare"]), roundi(w["legendary"])]
         else:
                 _chances_label.text = "шансы: %d%% обычный · %d%% редкий · %d%% легенда\nсдача копий: 10 очков = 1 крутка артефактов" % [
                         roundi(w["common"]), roundi(w["rare"] + w["uncommon"]), roundi(w["legendary"])]
+        
+        # Кнопка приза на выбор: видна только в супер-рукаве
+        var tokens: int = int(lab.super_choice_tokens) if lab else 0
+        _choice_btn.visible = _arm == "super"
+        _choice_btn.disabled = tokens < 1
+        if tokens > 0:
+                _choice_btn.text = "ПРИЗ НА ВЫБОР ГОТОВ ×%d" % tokens
+                BunkerUI.style_button(_choice_btn, "hazard", 16, true)
+        else:
+                _choice_btn.text = "ПРИЗ НА ВЫБОР · %d/%d супер-призывов" % [int(lab.super_choice_progress) if lab else 0, GachaData.SUPER_CHOICE_PITY]
+                BunkerUI.style_button(_choice_btn, "steel", 14)
 
 
 func _refresh_collection() -> void:
@@ -744,6 +778,7 @@ func _on_spin(times: int) -> void:
         var results: Array = []
         var lab = _lab()
         var super_before: int = int(lab.super_pulls) if lab else 0
+        var choice_before: int = int(lab.super_choice_tokens) if lab else 0
         if _arm == "super":
                 results = _game_manager.spin_super_gacha(times)
         elif _arm == "mutants":
@@ -778,6 +813,10 @@ func _on_spin(times: int) -> void:
         if super_earned:
                 _show_toast("СУПЕР-КРУТКА +1 · ВКЛАДКА «СУПЕР»")
                 return
+        var choice_earned: bool = lab2 != null and int(lab2.super_choice_tokens) > choice_before
+        if choice_earned:
+                _show_toast("ВЫБОР ПРИЗА ГОТОВ · КНОПКА «ПРИЗ НА ВЫБОР»")
+                return
         # Мигнуть тостом при легендарке
         var any_legend := false
         for r in results:
@@ -795,6 +834,175 @@ func _on_back_pressed() -> void:
         else:
                 get_tree().change_scene_to_file("res://scenes/lab/lab.tscn")
 
+
+
+# ==================== ПРИЗ НА ВЫБОР ====================
+
+func _build_choice_overlay() -> void:
+        _choice_overlay = Control.new()
+        _choice_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+        _choice_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+        _choice_overlay.visible = false
+        add_child(_choice_overlay)
+
+        var shade := ColorRect.new()
+        shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+        shade.color = Color(0, 0, 0, 0.82)
+        shade.gui_input.connect(func(ev):
+                if ev is InputEventMouseButton and ev.pressed:
+                        _choice_overlay.visible = false)
+        _choice_overlay.add_child(shade)
+
+        var panel := PanelContainer.new()
+        panel.anchor_left = 0.5
+        panel.anchor_top = 0.5
+        panel.anchor_right = 0.5
+        panel.anchor_bottom = 0.5
+        panel.offset_left = -560
+        panel.offset_top = -280
+        panel.offset_right = 560
+        panel.offset_bottom = 280
+        _choice_overlay.add_child(panel)
+
+        var v := VBoxContainer.new()
+        v.add_theme_constant_override("separation", 10)
+        panel.add_child(v)
+
+        var top := HBoxContainer.new()
+        _choice_title = BunkerUI.make_section_label("ПРИЗ НА ВЫБОР · эксклюзивы Чёрных ящиков")
+        _choice_title.add_theme_font_size_override("font_size", 20)
+        _choice_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        top.add_child(_choice_title)
+        var cback := Button.new()
+        cback.text = "НАЗАД"
+        cback.custom_minimum_size = Vector2(140, 44)
+        BunkerUI.style_button(cback, "steel", 15)
+        cback.pressed.connect(func(): _choice_overlay.visible = false)
+        top.add_child(cback)
+        v.add_child(top)
+
+        var note := BunkerUI.make_mono_label("каждые %d супер-призывов = 1 выбор · дубль мутанта = копия на ферму · дубль аномалии = +400 биомассы" % GachaData.SUPER_CHOICE_PITY, 13, Color("66794f"))
+        v.add_child(note)
+
+        var scroll := ScrollContainer.new()
+        scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+        v.add_child(scroll)
+
+        _choice_box = GridContainer.new()
+        _choice_box.columns = 3
+        _choice_box.add_theme_constant_override("h_separation", 14)
+        _choice_box.add_theme_constant_override("v_separation", 14)
+        _choice_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        scroll.add_child(_choice_box)
+
+
+func _rebuild_choice_tiles() -> void:
+        for c in _choice_box.get_children():
+                c.queue_free()
+        for ex in GachaData.EXCLUSIVE_MUTANTS:
+                _choice_box.add_child(_make_choice_tile("mut", str(ex["type"]), str(ex.get("label", "")), str(ex.get("desc", ""))))
+        for ax in GachaData.EXCLUSIVE_ANOMALIES:
+                _choice_box.add_child(_make_choice_tile("art", str(ax["type"]), str(ax.get("label", "")), str(ax.get("desc", ""))))
+
+
+func _make_choice_tile(kind: String, type: String, label: String, desc: String) -> Control:
+        var lab = _lab()
+        var owned: bool = false
+        if lab:
+                owned = lab.unlocked_mutants.has(type) if kind == "mut" else lab.exclusive_anomalies.has(type)
+        var btn := Button.new()
+        btn.custom_minimum_size = Vector2(340, 118)
+        var sb := StyleBoxFlat.new()
+        sb.bg_color = Color("0a100b")
+        sb.set_border_width_all(2)
+        sb.set_corner_radius_all(10)
+        sb.border_color = Color("b48cff") if owned else Color("3a4433")
+        btn.add_theme_stylebox_override("normal", sb)
+        var sbh := sb.duplicate()
+        sbh.border_color = BunkerUI.HAZARD
+        btn.add_theme_stylebox_override("hover", sbh)
+        var sbp := sb.duplicate()
+        sbp.border_color = Color("ffd94d")
+        btn.add_theme_stylebox_override("pressed", sbp)
+        btn.add_theme_stylebox_override("focus", sb.duplicate())
+
+        var icon := TextureRect.new()
+        var path := GachaData.card_icon_path(type, kind == "mut", false)
+        if ResourceLoader.exists(path):
+                icon.texture = load(path)
+        icon.anchor_left = 0.0
+        icon.anchor_right = 0.0
+        icon.anchor_top = 0.0
+        icon.anchor_bottom = 1.0
+        icon.offset_left = 10
+        icon.offset_right = 110
+        icon.offset_top = 10
+        icon.offset_bottom = -10
+        icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+        icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+        icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+        btn.add_child(icon)
+
+        var nm := Label.new()
+        nm.text = label
+        nm.add_theme_font_override("font", BunkerUI.font_title())
+        nm.add_theme_font_size_override("font_size", 15)
+        nm.add_theme_color_override("font_color", Color("b48cff") if owned else BunkerUI.TEXT_LIGHT)
+        nm.anchor_left = 1.0
+        nm.anchor_right = 1.0
+        nm.offset_left = -222
+        nm.offset_right = -12
+        nm.offset_top = 12
+        nm.offset_bottom = 48
+        nm.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+        nm.mouse_filter = Control.MOUSE_FILTER_IGNORE
+        btn.add_child(nm)
+
+        var ds := BunkerUI.make_mono_label(("В КОЛЛЕКЦИИ · дубль = " + ("копия" if kind == "mut" else "+400 био")) if owned else ("НОВЫЙ · " + desc), 11, Color("66794f"))
+        ds.anchor_left = 1.0
+        ds.anchor_right = 1.0
+        ds.anchor_top = 1.0
+        ds.anchor_bottom = 1.0
+        ds.offset_left = -222
+        ds.offset_right = -12
+        ds.offset_top = -46
+        ds.offset_bottom = -10
+        ds.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+        ds.mouse_filter = Control.MOUSE_FILTER_IGNORE
+        btn.add_child(ds)
+
+        btn.pressed.connect(_on_choice_pick.bind(kind, type))
+        return btn
+
+
+func _on_choice_open() -> void:
+        _play_click_sound()
+        var lab = _lab()
+        if lab == null or int(lab.super_choice_tokens) <= 0:
+                _show_toast("Выбор не готов: %d/%d супер-призывов" % [int(lab.super_choice_progress) if lab else 0, GachaData.SUPER_CHOICE_PITY])
+                return
+        _rebuild_choice_tiles()
+        _choice_overlay.visible = true
+
+
+func _on_choice_pick(kind: String, type: String) -> void:
+        _play_click_sound()
+        if not _game_manager:
+                return
+        var roll: Dictionary = _game_manager.claim_super_choice(kind, type)
+        if roll.is_empty():
+                _show_toast("Выбор недоступен")
+                return
+        _choice_overlay.visible = false
+        _session_drops.push_front({"arm": "super", "kind": kind, "type": type, "rarity": "ex", "status": roll.get("status", "new")})
+        while _session_drops.size() > 12:
+                _session_drops.pop_back()
+        _refresh_all()
+        var nm: String = Loc.type_name(type)
+        if str(roll.get("status", "new")) == "dup":
+                _show_toast("ПРИЗ ВЫБРАН: %s · дубль — %s" % [nm, "копия на ферму" if kind == "mut" else "+400 биомассы"])
+        else:
+                _show_toast("ПРИЗ ВЫБРАН: %s · новый в коллекции!" % nm)
 
 func _show_toast(text: String) -> void:
         _toast_label.text = text
