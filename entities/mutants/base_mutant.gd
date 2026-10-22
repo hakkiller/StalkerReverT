@@ -432,7 +432,7 @@ func _patrol(_delta):
 
 
 func _chase(_delta):
-	if not target_stalker or not is_instance_valid(target_stalker):
+	if not target_stalker or not is_instance_valid(target_stalker) or (target_stalker.has_method("is_alive") and not target_stalker.is_alive()):
 		_find_best_target()
 		if not target_stalker:
 			current_state = State.PATROL
@@ -460,7 +460,7 @@ func _chase(_delta):
 
 
 func _attack(_delta):
-	if not target_stalker or not is_instance_valid(target_stalker):
+	if not target_stalker or not is_instance_valid(target_stalker) or (target_stalker.has_method("is_alive") and not target_stalker.is_alive()):
 		current_state = State.PATROL
 		target_stalker = null
 		if navigation_component:
@@ -496,6 +496,8 @@ func _find_best_target():
 			continue
 		if s == self:
 			continue
+		if s.has_method("is_alive") and not s.is_alive():
+			continue
 		
 		var dist = global_position.distance_to(s.global_position)
 		if dist < detection_radius and dist < nearest_dist:
@@ -520,7 +522,7 @@ func _on_stalker_detected(body: Node3D):
 			current_state = State.CHASE
 			spotted_stalker.emit(body)
 		# Иначе если нет цели или новая цель ближе
-		elif not target_stalker or not is_instance_valid(target_stalker):
+		elif not target_stalker or not is_instance_valid(target_stalker) or (target_stalker.has_method("is_alive") and not target_stalker.is_alive()):
 			target_stalker = body
 			current_state = State.CHASE
 			spotted_stalker.emit(body)
@@ -541,7 +543,7 @@ func _try_attack():
 	if current_state != State.ATTACK:
 		return
 	
-	if not target_stalker or not is_instance_valid(target_stalker):
+	if not target_stalker or not is_instance_valid(target_stalker) or (target_stalker.has_method("is_alive") and not target_stalker.is_alive()):
 		return
 	
 	if attack_timer.time_left > 0:

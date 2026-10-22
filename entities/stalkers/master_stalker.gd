@@ -283,6 +283,7 @@ func _on_died(source: Node):
         if _dying:
                 return
         _dying = true
+        remove_from_group("stalkers")
         collision_layer = 0
         collision_mask = 0
         set_physics_process(false)

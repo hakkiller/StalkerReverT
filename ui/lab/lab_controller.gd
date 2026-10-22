@@ -3341,6 +3341,93 @@ func _make_arena_board_row(k: String, v: String, gold: bool = false) -> Control:
         return wrap
 
 
+func _make_claim_row(kind: String, idx: int, k: String, v: String) -> Control:
+        """Строка выполненной сезонной награды с кнопкой ЗАБРАТЬ"""
+        var row := HBoxContainer.new()
+        row.add_theme_constant_override("separation", 8)
+        var kl := BunkerUI.make_mono_label(k, 15, Color("a9bd8d"))
+        kl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        row.add_child(kl)
+        var vl := BunkerUI.make_mono_label(v, 15, Color("ffd94d"))
+        vl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+        row.add_child(vl)
+        var btn := Button.new()
+        btn.text = "ЗАБРАТЬ"
+        btn.custom_minimum_size = Vector2(120, 36)
+        BunkerUI.style_button(btn, "primary", 14)
+        btn.pressed.connect(_on_arena_claim.bind(kind, idx))
+        btn.mouse_entered.connect(_play_hover_sound)
+        row.add_child(btn)
+        var line := ColorRect.new()
+        line.custom_minimum_size = Vector2(0, 1)
+        line.color = Color(BunkerUI.STEEL_EDGE, 0.6)
+        var wrap := VBoxContainer.new()
+        wrap.add_theme_constant_override("separation", 2)
+        wrap.add_child(row)
+        wrap.add_child(line)
+        return wrap
+
+
+func _on_arena_claim(kind: String, idx: int):
+        _play_click_sound()
+        if not lab_data:
+                return
+        var store: Dictionary = lab_data.arena_medals_claimed if kind == "medal" else lab_data.arena_season_tasks_claimed
+        if bool(store.get(idx, false)):
+                return
+        store[idx] = true
+        var msg := ""
+        if kind == "medal":
+                match idx:
+                        0:
+                                if not lab_data.unlocked_mutants.has("chimera"):
+                                        lab_data.unlocked_mutants.append("chimera")
+                                lab_data.farm_copies["chimera"] = int(lab_data.farm_copies.get("chimera", 0)) + 1
+                                lab_data.gacha_rolls_mutants += 30
+                                msg = "Медаль «Лига»: Химера в отряде + 30 круток!"
+                        1:
+                                lab_data.gacha_rolls_mutants += 10
+                                msg = "Медаль «Выброс»: +10 круток!"
+                        2:
+                                lab_data.gacha_rolls_mutants += 25
+                                msg = "Медаль «Глубина»: +25 круток!"
+                        3:
+                                lab_data.biomass += 120000.0
+                                msg = "Медаль «Жатва»: +120 000 биомассы!"
+                        4:
+                                lab_data.gacha_rolls_mutants += 10
+                                msg = "Медаль «Саркофаг»: +10 круток!"
+                        5:
+                                lab_data.gacha_rolls_mutants += 5
+                                msg = "Медаль «Охотник»: +5 круток!"
+                        6:
+                                lab_data.gacha_rolls_mutants += 5
+                                msg = "Медаль «Странник»: +5 круток!"
+                        7:
+                                lab_data.gacha_rolls_mutants += 10
+                                msg = "Медаль «Зверовод»: +10 круток!"
+                        8:
+                                lab_data.gacha_rolls_mutants += 15
+                                msg = "Медаль «Монолит»: +15 круток!"
+        else:
+                match idx:
+                        0:
+                                lab_data.gacha_rolls_mutants += 10
+                                msg = "Задача сезона: +10 круток!"
+                        1:
+                                lab_data.gacha_rolls_mutants += 15
+                                msg = "Задача сезона: +15 круток!"
+                        2:
+                                lab_data.gacha_rolls_mutants += 5
+                                msg = "Задача сезона: +5 круток!"
+                        3:
+                                lab_data.biomass += 50000.0
+                                msg = "Задача сезона: +50 000 биомассы!"
+        _show_message(msg, 2.2)
+        _rebuild_arena_panel()
+        _refresh_ui()
+
+
 func _rebuild_arena_panel():
         """Список вызовов + доска по активной вкладке"""
         for child in _arena_foes_box.get_children():
@@ -3403,9 +3490,17 @@ func _rebuild_arena_panel():
                                 if bool(m[3]):
                                         done_count += 1
                         title.text = "СЕЗОННЫЕ НАГРАДЫ · медалей %d/%d" % [done_count, medals.size()]
+                        var midx := 0
                         for m in medals:
-                                var val: String = str(m[1]) if bool(m[3]) else str(m[2])
-                                _arena_board_box.add_child(_make_arena_board_row(str(m[0]), val, bool(m[3])))
+                                var mclaimed: bool = bool(lab_data.arena_medals_claimed.get(midx, false))
+                                var mval: String = str(m[1]) if bool(m[3]) else str(m[2])
+                                if bool(m[3]) and not mclaimed:
+                                        _arena_board_box.add_child(_make_claim_row("medal", midx, str(m[0]), mval))
+                                elif mclaimed:
+                                        _arena_board_box.add_child(_make_arena_board_row(str(m[0]), "ПОЛУЧЕНО · " + mval, true))
+                                else:
+                                        _arena_board_box.add_child(_make_arena_board_row(str(m[0]), mval, false))
+                                midx += 1
                 1:
                         title.text = "ЗАЛ СЛАВЫ · лига «САРКОФАГ»"
                         var place := 1
@@ -3433,10 +3528,18 @@ func _rebuild_arena_panel():
                                 _arena_board_box.add_child(_make_arena_board_row("Отряд пуст", "крутите Гачу Зоны"))
                 _:
                         title.text = "ЗАДАЧИ СЕЗОНА"
-                        _arena_board_box.add_child(_make_arena_board_row("Победы сезона", "%d / 10" % mini(wins, 10)))
-                        _arena_board_box.add_child(_make_arena_board_row("Рекорд волны 30", "%d / 30" % mini(rec, 30), rec >= 30))
-                        _arena_board_box.add_child(_make_arena_board_row("Вызовы приняты", "%d / 5" % mini(total_runs, 5)))
-                        _arena_board_box.add_child(_make_arena_board_row("Перебить 500 сталкеров", "%d / 500" % mini(kills, 500)))
+                        var st_names := ["Победы сезона ×10", "Рекорд волны 30", "Вызовы приняты ×5", "Перебить 500 сталкеров"]
+                        var st_rew := ["+10 круток", "+15 круток", "+5 круток", "+50 000 био"]
+                        var st_prog := ["%d / 10" % mini(wins, 10), "%d / 30" % mini(rec, 30), "%d / 5" % mini(total_runs, 5), "%d / 500" % mini(kills, 500)]
+                        var st_done := [wins >= 10, rec >= 30, total_runs >= 5, kills >= 500]
+                        for si in range(4):
+                                var sclaimed: bool = bool(lab_data.arena_season_tasks_claimed.get(si, false))
+                                if bool(st_done[si]) and not sclaimed:
+                                        _arena_board_box.add_child(_make_claim_row("task", si, str(st_names[si]), "%s · %s" % [str(st_rew[si]), str(st_prog[si])]))
+                                elif sclaimed:
+                                        _arena_board_box.add_child(_make_arena_board_row(str(st_names[si]), "ПОЛУЧЕНО · %s" % str(st_rew[si]), true))
+                                else:
+                                        _arena_board_box.add_child(_make_arena_board_row(str(st_names[si]), "%s · %s" % [str(st_rew[si]), str(st_prog[si])], false))
 
 
 func _on_arena_tab(idx: int):
@@ -3506,14 +3609,14 @@ func _arena_medals(my_place: int) -> Array:
         var power := _arena_player_power()
         return [
                 ["Топ-1 лиги", "Химера ★ + 30 круток", "место %d из 11" % my_place, my_place == 1],
-                ["10 побед сезона", "медаль «Выброс»", "%d / 10 побед" % mini(wins_total, 10), wins_total >= 10],
+                ["10 побед сезона", "+10 круток · медаль «Выброс»", "%d / 10 побед" % mini(wins_total, 10), wins_total >= 10],
                 ["Рекорд волны 30", "+25 круток", "%d / 30 волн" % mini(rec, 30), rec >= 30],
                 ["Защита удержана ×5", "+120 000 био", "%d / 5 оборон" % mini(lab_data.arena_wins_defense, 5), lab_data.arena_wins_defense >= 5],
-                ["Защита удержана ×10", "медаль «Саркофаг»", "%d / 10 оборон" % mini(lab_data.arena_wins_defense, 10), lab_data.arena_wins_defense >= 10],
+                ["Защита удержана ×10", "+10 круток · медаль «Саркофаг»", "%d / 10 оборон" % mini(lab_data.arena_wins_defense, 10), lab_data.arena_wins_defense >= 10],
                 ["5 побед в вызовах", "+5 круток", "%d / 5 вызовов" % mini(lab_data.arena_wins_challenge, 5), lab_data.arena_wins_challenge >= 5],
                 ["Участие: 10 вылазок", "+5 круток", "%d / 10 забегов" % mini(runs, 10), runs >= 10],
                 ["Отряд из 10 мутантов", "+10 круток", "%d / 10 видов" % mini(mutants, 10), mutants >= 10],
-                ["Сила отряда 5000", "медаль «Монолит»", "%s / 5000 силы" % _format_number(float(mini(power, 5000))), power >= 5000],
+                ["Сила отряда 5000", "+15 круток · медаль «Монолит»", "%s / 5000 силы" % _format_number(float(mini(power, 5000))), power >= 5000],
         ]
 
 

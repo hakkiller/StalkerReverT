@@ -61,6 +61,10 @@ var campaign_level_reached: int = 1
 @export var arena_wins_defense: int = 0
 @export var arena_defense_squad: Array[String] = []
 
+# СЕЗОННЫЕ НАГРАДЫ: забранные медали и сезонные задачи (индекс -> true)
+@export var arena_medals_claimed: Dictionary = {}
+@export var arena_season_tasks_claimed: Dictionary = {}
+
 # Эксклюзивные аномалии Чёрных ящиков (типы из GachaData.EXCLUSIVE_ANOMALIES)
 @export var exclusive_anomalies: Array[String] = []
 
