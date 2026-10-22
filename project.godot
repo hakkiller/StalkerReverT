@@ -12,8 +12,8 @@ config_version=5
 [application]
 
 config/name="StalkerRevert"
-config/version="0.11.0"
-config/version_stamp="v0.11.0 · «ТРОПА В ТУМАН» · 22.10.26"
+config/version="0.12.0"
+config/version_stamp="v0.12.0 · «ПРОВОДНИК» · 22.10.26"
 run/main_scene="res://scenes/ui/main_menu.tscn"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
@@ -25,8 +25,10 @@ GameManager="*res://core/game_manager.gd"
 Signals="*res://core/signals.gd"
 Enums="*res://core/enums.gd"
 Loc="*res://core/localization.gd"
+Prog="*res://core/progression.gd"
 
 [display]
+
 
 window/size/viewport_width=1920
 window/size/viewport_height=1080

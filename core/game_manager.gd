@@ -862,6 +862,9 @@ func process_run_result(result: Dictionary):
         var lab = get_lab_data()
         var stats = get_statistics()
 
+        # Прогрессия: опыт/задачи/трек от любого забега (кампания/выживание/башня/арена)
+        Prog.on_run_result(result)
+
         var reward = result.get("reward", 0.0)
         lab.biomass += reward
         pass # print("Добавлено биомассы: " + str(reward))

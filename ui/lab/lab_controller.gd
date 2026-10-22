@@ -87,12 +87,19 @@ func _ready():
         _build_gallery_ui()
         _build_profile_ui()
         _build_language_button()
+        _build_tasks_ui()
         _build_arena_ui()
         _build_gates_ui()
         _apply_bunker_style()
         _apply_bunker_layout_sizes()
         Loc.changed.connect(_apply_static_texts)
         _show_last_run_result()
+
+        # Прогрессия: тосты, задачи, сюжетный онбординг
+        Prog.toast.connect(_show_message)
+        Prog.task_completed.connect(_on_prog_task_done)
+        Prog.level_up.connect(_on_prog_level_up)
+        _prog_late_story()
 
         # print("lab_controller: initialized, GameManager найден: ", game_manager != null)
 
@@ -3037,6 +3044,7 @@ func _on_arena_pressed():
         _play_click_sound()
         _hide_lab_overlays("arena")
         arena_panel.visible = true
+        Prog.request_story("arena", self)
         _arena_tab = 0
         _rebuild_arena_panel()
         _update_arena_timer()
@@ -3693,6 +3701,7 @@ func _open_gates():
         _hide_lab_overlays("gates")
         _refresh_gates_data()
         gates_panel.visible = true
+        Prog.request_story("gates", self)
 
 
 func _on_gates_open_pressed():
@@ -3788,3 +3797,461 @@ func _on_gates_go_pressed():
         _refresh_campaign_ui()
         _show_message("Этаж %d выбран — жмите ЗАБЕГ" % _tower_floor, 1.8)
 
+
+
+# ==================== ЗАДАЧИ ЗОНЫ (уровень, день/неделя, трек сундуков) ====================
+
+var tasks_panel: Control = null
+var _tasks_built := false
+var _tasks_points_label: Label = null
+var _tasks_track_bar: ProgressBar = null
+var _tasks_track_sub: Label = null
+var _tasks_level_value: Label = null
+var _tasks_level_bar: ProgressBar = null
+var _tasks_level_sub: Label = null
+var _tasks_lists_box: VBoxContainer = null
+var _tasks_track_row: HBoxContainer = null
+
+
+func _build_tasks_ui():
+        """Кнопка ЗАДАЧИ в нижнем ряду + полноэкранная панель (строится кодом)."""
+        var bottom: HBoxContainer = get_node_or_null("VBox/BottomButtons")
+        if bottom:
+                var tbtn := Button.new()
+                tbtn.name = "TasksButton"
+                tbtn.text = "ЗАДАЧИ"
+                tbtn.custom_minimum_size = Vector2(0, 62)
+                tbtn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+                BunkerUI.style_button(tbtn, "steel", 18)
+                tbtn.pressed.connect(_on_tasks_pressed)
+                tbtn.mouse_entered.connect(_play_hover_sound)
+                bottom.add_child(tbtn)
+
+        tasks_panel = Control.new()
+        tasks_panel.name = "TasksPanel"
+        tasks_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+        tasks_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+        tasks_panel.visible = false
+        add_child(tasks_panel)
+
+        var bg := ColorRect.new()
+        bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+        bg.color = Color(0.023, 0.033, 0.018, 0.985)
+        tasks_panel.add_child(bg)
+
+        var root := VBoxContainer.new()
+        root.set_anchors_preset(Control.PRESET_FULL_RECT)
+        root.offset_left = 26
+        root.offset_right = -26
+        root.offset_top = 14
+        root.offset_bottom = -12
+        root.add_theme_constant_override("separation", 8)
+        tasks_panel.add_child(root)
+
+        # ---- Шапка: НАЗАД + заголовок + уровень сталкера ----
+        var head := HBoxContainer.new()
+        head.add_theme_constant_override("separation", 16)
+        root.add_child(head)
+
+        var back := Button.new()
+        back.text = "◄  НАЗАД"
+        back.custom_minimum_size = Vector2(170, 54)
+        back.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+        BunkerUI.style_button(back, "steel", 18)
+        back.pressed.connect(_on_tasks_close_pressed)
+        back.mouse_entered.connect(_play_hover_sound)
+        head.add_child(back)
+
+        var t1 := Label.new()
+        t1.text = "ЗАДАЧИ"
+        t1.add_theme_font_override("font", BunkerUI.font_title())
+        t1.add_theme_font_size_override("font_size", 32)
+        t1.add_theme_color_override("font_color", BunkerUI.TEXT_LIGHT)
+        head.add_child(t1)
+        var t2 := Label.new()
+        t2.text = "ЗОНЫ"
+        t2.add_theme_font_override("font", BunkerUI.font_title())
+        t2.add_theme_font_size_override("font_size", 32)
+        t2.add_theme_color_override("font_color", BunkerUI.HAZARD)
+        head.add_child(t2)
+
+        var hsp := Control.new()
+        hsp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        head.add_child(hsp)
+
+        # Карточка уровня: УР. N + шкала опыта
+        var lvl_card := _tasks_level_card()
+        head.add_child(lvl_card)
+
+        # ---- Очки трека ----
+        var pts_row := HBoxContainer.new()
+        pts_row.add_theme_constant_override("separation", 14)
+        root.add_child(pts_row)
+        _tasks_points_label = BunkerUI.make_mono_label("", 15, BunkerUI.HAZARD_BRIGHT)
+        pts_row.add_child(_tasks_points_label)
+
+        # ---- Контент: слева задачи (скролл), справа трек ----
+        var body := HBoxContainer.new()
+        body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+        body.add_theme_constant_override("separation", 18)
+        root.add_child(body)
+
+        var left_scroll := ScrollContainer.new()
+        left_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        left_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+        left_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+        body.add_child(left_scroll)
+
+        _tasks_lists_box = VBoxContainer.new()
+        _tasks_lists_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        _tasks_lists_box.add_theme_constant_override("separation", 10)
+        left_scroll.add_child(_tasks_lists_box)
+
+        var right_box := VBoxContainer.new()
+        right_box.custom_minimum_size = Vector2(430, 0)
+        right_box.add_theme_constant_override("separation", 10)
+        body.add_child(right_box)
+
+        var track_head := Label.new()
+        track_head.text = "ТРЕК НАГРАД"
+        track_head.add_theme_font_override("font", BunkerUI.font_title())
+        track_head.add_theme_font_size_override("font_size", 20)
+        track_head.add_theme_color_override("font_color", BunkerUI.GREEN)
+        right_box.add_child(track_head)
+
+        _tasks_track_sub = BunkerUI.make_mono_label("", 13, BunkerUI.TEXT_DIM)
+        right_box.add_child(_tasks_track_sub)
+
+        var track_scroll := ScrollContainer.new()
+        track_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+        track_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+        right_box.add_child(track_scroll)
+
+        _tasks_track_row = HBoxContainer.new()
+        _tasks_track_row.add_theme_constant_override("separation", 10)
+        _tasks_track_row.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+        track_scroll.add_child(_tasks_track_row)
+
+        if not _tasks_built:
+                _tasks_built = true
+                Prog.tasks_changed.connect(_on_prog_tasks_changed)
+                Prog.track_changed.connect(_on_prog_tasks_changed)
+                Prog.xp_changed.connect(_on_prog_xp_changed)
+                Prog.track_changed.connect(_refresh_tasks_panel)
+                Prog.tasks_changed.connect(_refresh_tasks_panel)
+
+
+func _tasks_level_card() -> Control:
+        var card := PanelContainer.new()
+        var sb := StyleBoxFlat.new()
+        sb.bg_color = BunkerUI.STEEL_HI
+        sb.border_color = BunkerUI.STEEL_EDGE
+        sb.set_border_width_all(2)
+        sb.set_corner_radius_all(10)
+        sb.content_margin_left = 14.0
+        sb.content_margin_right = 14.0
+        sb.content_margin_top = 8.0
+        sb.content_margin_bottom = 8.0
+        card.add_theme_stylebox_override("panel", sb)
+        var v := VBoxContainer.new()
+        v.add_theme_constant_override("separation", 2)
+        card.add_child(v)
+        _tasks_level_value = Label.new()
+        _tasks_level_value.add_theme_font_override("font", BunkerUI.font_title())
+        _tasks_level_value.add_theme_font_size_override("font_size", 20)
+        _tasks_level_value.add_theme_color_override("font_color", BunkerUI.HAZARD_BRIGHT)
+        v.add_child(_tasks_level_value)
+        _tasks_level_bar = ProgressBar.new()
+        _tasks_level_bar.custom_minimum_size = Vector2(240, 12)
+        _tasks_level_bar.show_percentage = false
+        _tasks_level_bar.add_theme_stylebox_override("background", _tasks_bar_bg())
+        _tasks_level_bar.add_theme_stylebox_override("fill", _tasks_bar_fill(BunkerUI.GREEN))
+        v.add_child(_tasks_level_bar)
+        _tasks_level_sub = BunkerUI.make_mono_label("", 12, BunkerUI.TEXT_DIM)
+        v.add_child(_tasks_level_sub)
+        return card
+
+
+func _tasks_bar_bg() -> StyleBoxFlat:
+        var sb := StyleBoxFlat.new()
+        sb.bg_color = Color(0.05, 0.08, 0.05)
+        sb.border_color = BunkerUI.STEEL_EDGE
+        sb.set_border_width_all(1)
+        sb.set_corner_radius_all(4)
+        return sb
+
+
+func _tasks_bar_fill(col: Color) -> StyleBoxFlat:
+        var sb := StyleBoxFlat.new()
+        sb.bg_color = col
+        sb.set_corner_radius_all(4)
+        return sb
+
+
+func _on_tasks_pressed():
+        _play_click_sound()
+        _hide_lab_overlays("tasks")
+        _refresh_tasks_panel()
+        tasks_panel.visible = true
+
+
+func _on_tasks_close_pressed():
+        _play_click_sound()
+        tasks_panel.visible = false
+
+
+func _on_prog_tasks_changed():
+        if tasks_panel and tasks_panel.visible:
+                _refresh_tasks_panel()
+
+
+func _on_prog_xp_changed(_l: int, _x: int, _n: int):
+        if tasks_panel and tasks_panel.visible:
+                _refresh_tasks_panel()
+
+
+func _refresh_tasks_panel():
+        if tasks_panel == null:
+                return
+        # Уровень и опыт
+        var lvl := Prog.level()
+        var xp := Prog.xp_in_level()
+        var need := Prog.xp_need(lvl)
+        _tasks_level_value.text = "УРОВЕНЬ СТАЛКЕРА: %d" % lvl
+        _tasks_level_bar.max_value = need
+        _tasks_level_bar.value = xp
+        _tasks_level_sub.text = "опыт %d / %d до ур. %d · всего %d" % [xp, need, lvl + 1, Prog.xp_total()]
+        # Очки и трек
+        var pts := Prog.track_points()
+        var cyc := Prog.track_cycle()
+        _tasks_points_label.text = "ОЧКИ ЗАДАЧ: %d · ЦИКЛ ТРЕКА %d · очки дают задачи и любые бои" % [pts, cyc]
+        var next_tier := Prog.TRACK_TIERS + 1
+        for i in range(1, Prog.TRACK_TIERS + 1):
+                if not Prog.tier_claimed(i):
+                        next_tier = i
+                        break
+        if next_tier <= Prog.TRACK_TIERS:
+                _tasks_track_sub.text = "до ступени %d: %d / %d очков" % [next_tier, pts, next_tier * Prog.TIER_COST]
+                _tasks_track_bar_max(next_tier * Prog.TIER_COST, pts)
+        else:
+                _tasks_track_sub.text = "трек закрыт — собирай очки нового цикла"
+                _tasks_track_bar_max(1, 0)
+        # Задачи и сундуки
+        _rebuild_tasks_lists()
+        _rebuild_tasks_track()
+
+
+func _tasks_track_bar_max(m: int, v: int) -> void:
+        if _tasks_track_bar == null:
+                _tasks_track_bar = ProgressBar.new()
+                _tasks_track_bar.custom_minimum_size = Vector2(0, 10)
+                _tasks_track_bar.show_percentage = false
+                _tasks_track_bar.add_theme_stylebox_override("background", _tasks_bar_bg())
+                _tasks_track_bar.add_theme_stylebox_override("fill", _tasks_bar_fill(BunkerUI.HAZARD))
+                _tasks_track_sub.get_parent().add_child.call_deferred(_tasks_track_bar)
+        _tasks_track_bar.max_value = m
+        _tasks_track_bar.value = v
+
+
+func _rebuild_tasks_lists():
+        for child in _tasks_lists_box.get_children():
+                child.queue_free()
+        _tasks_section("ЕЖЕДНЕВНЫЕ · обновятся в 00:00")
+        for t in Prog.daily_tasks():
+                _tasks_lists_box.add_child(_make_task_row("d", t))
+        _tasks_section("НЕДЕЛЬНЫЕ · обновятся в понедельник")
+        for t in Prog.weekly_tasks():
+                _tasks_lists_box.add_child(_make_task_row("w", t))
+        var note := BunkerUI.make_mono_label("Любой бой даёт опыт и очки трека. Уровень растёт — сундук жирнее.", 12, BunkerUI.TEXT_FAINT)
+        _tasks_lists_box.add_child(note)
+
+
+func _tasks_section(text: String):
+        var l := Label.new()
+        l.text = text
+        l.add_theme_font_override("font", BunkerUI.font_title())
+        l.add_theme_font_size_override("font_size", 18)
+        l.add_theme_color_override("font_color", BunkerUI.TEXT_DIM)
+        _tasks_lists_box.add_child(l)
+
+
+func _make_task_row(kind: String, t: Dictionary) -> Control:
+        var def: Dictionary = t["def"]
+        var row := PanelContainer.new()
+        var sb := StyleBoxFlat.new()
+        sb.bg_color = BunkerUI.STEEL_HI
+        sb.border_color = BunkerUI.STEEL_EDGE
+        sb.set_border_width_all(1)
+        sb.set_corner_radius_all(8)
+        sb.content_margin_left = 12.0
+        sb.content_margin_right = 12.0
+        sb.content_margin_top = 8.0
+        sb.content_margin_bottom = 8.0
+        row.add_theme_stylebox_override("panel", sb)
+        var h := HBoxContainer.new()
+        h.add_theme_constant_override("separation", 12)
+        row.add_child(h)
+        var v := VBoxContainer.new()
+        v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        v.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+        v.add_theme_constant_override("separation", 4)
+        h.add_child(v)
+        var title := Label.new()
+        title.text = str(def["title"])
+        title.add_theme_font_override("font", BunkerUI.font_body())
+        title.add_theme_font_size_override("font_size", 16)
+        title.add_theme_color_override("font_color", BunkerUI.TEXT_LIGHT)
+        v.add_child(title)
+        var bar := ProgressBar.new()
+        bar.custom_minimum_size = Vector2(0, 10)
+        bar.show_percentage = false
+        bar.max_value = int(def["need"])
+        bar.value = int(t["prog"])
+        bar.add_theme_stylebox_override("background", _tasks_bar_bg())
+        var fill_col := BunkerUI.GREEN if bool(t["done"]) else BunkerUI.HAZARD
+        bar.add_theme_stylebox_override("fill", _tasks_bar_fill(fill_col))
+        v.add_child(bar)
+        var sub := BunkerUI.make_mono_label("%d / %d · +%d опыта, +%d очков" % [int(t["prog"]), int(def["need"]), int(def["xp"]), int(def["pts"])], 12, BunkerUI.TEXT_DIM)
+        v.add_child(sub)
+        var btn := Button.new()
+        btn.custom_minimum_size = Vector2(170, 52)
+        btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+        if bool(t["claimed"]):
+                btn.text = "ЗАКРЫТО"
+                btn.disabled = true
+                BunkerUI.style_button(btn, "steel", 15)
+        elif bool(t["done"]):
+                btn.text = "ЗАБРАТЬ"
+                BunkerUI.style_button(btn, "primary", 16)
+                btn.pressed.connect(_on_task_claim.bind(kind, str(def["id"])))
+        else:
+                btn.text = "В ПРОЦЕССЕ"
+                btn.disabled = true
+                BunkerUI.style_button(btn, "steel", 15)
+        btn.mouse_entered.connect(_play_hover_sound)
+        h.add_child(btn)
+        return row
+
+
+func _on_task_claim(kind: String, id: String):
+        _play_click_sound()
+        if Prog.claim_task(kind, id):
+                _refresh_tasks_panel()
+
+
+func _rebuild_tasks_track():
+        for child in _tasks_track_row.get_children():
+                child.queue_free()
+        for i in range(1, Prog.TRACK_TIERS + 1):
+                _tasks_track_row.add_child(_make_chest_tile(i))
+
+
+func _make_chest_tile(tier: int) -> Control:
+        var kind := Prog.chest_kind(tier)
+        var col: Color = Prog.chest_color(kind)
+        var contents: Dictionary = Prog.chest_contents(tier)
+        var claimed := Prog.tier_claimed(tier)
+        var enough := Prog.track_points() >= tier * Prog.TIER_COST
+        var tile := Button.new()
+        tile.custom_minimum_size = Vector2(148, 168)
+        var sb := StyleBoxFlat.new()
+        sb.bg_color = BunkerUI.STEEL_HI if not claimed else Color(0.06, 0.09, 0.06)
+        sb.border_color = col
+        sb.set_border_width_all(2 if not claimed else 1)
+        sb.set_corner_radius_all(10)
+        sb.content_margin_left = 8.0
+        sb.content_margin_right = 8.0
+        sb.content_margin_top = 8.0
+        sb.content_margin_bottom = 8.0
+        tile.add_theme_stylebox_override("normal", sb)
+        var sbh: StyleBoxFlat = sb.duplicate()
+        sbh.bg_color = Color(0.12, 0.17, 0.11)
+        tile.add_theme_stylebox_override("hover", sbh)
+        tile.add_theme_stylebox_override("pressed", sbh)
+        var v := VBoxContainer.new()
+        v.set_anchors_preset(Control.PRESET_FULL_RECT)
+        v.add_theme_constant_override("separation", 4)
+        v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+        tile.add_child(v)
+        var num := Label.new()
+        num.text = "%d" % tier
+        num.add_theme_font_override("font", BunkerUI.font_mono())
+        num.add_theme_font_size_override("font_size", 13)
+        num.add_theme_color_override("font_color", BunkerUI.TEXT_FAINT)
+        num.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+        v.add_child(num)
+        var name_l := Label.new()
+        name_l.text = Prog.chest_name(kind)
+        name_l.add_theme_font_override("font", BunkerUI.font_title())
+        name_l.add_theme_font_size_override("font_size", 13)
+        name_l.add_theme_color_override("font_color", col)
+        name_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+        name_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+        v.add_child(name_l)
+        var desc := Label.new()
+        var parts: Array[String] = []
+        if int(contents["biomass"]) > 0:
+                parts.append("биомасса %d" % int(contents["biomass"]))
+        if int(contents["mutant_rolls"]) > 0:
+                parts.append("крутки мут. ×%d" % int(contents["mutant_rolls"]))
+        if int(contents["anomaly_rolls"]) > 0:
+                parts.append("крутки аном. ×%d" % int(contents["anomaly_rolls"]))
+        desc.text = "\n".join(parts)
+        desc.add_theme_font_override("font", BunkerUI.font_body())
+        desc.add_theme_font_size_override("font_size", 12)
+        desc.add_theme_color_override("font_color", BunkerUI.TEXT_DIM)
+        desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+        v.add_child(desc)
+        var sp := Control.new()
+        sp.size_flags_vertical = Control.SIZE_EXPAND_FILL
+        sp.mouse_filter = Control.MOUSE_FILTER_IGNORE
+        v.add_child(sp)
+        var state := Label.new()
+        if claimed:
+                state.text = "ЗАБРАНО"
+                state.add_theme_color_override("font_color", BunkerUI.TEXT_FAINT)
+        elif enough:
+                state.text = "ОТКРЫТО"
+                state.add_theme_color_override("font_color", BunkerUI.GREEN)
+        else:
+                state.text = "%d ОЧКОВ" % (tier * Prog.TIER_COST)
+                state.add_theme_color_override("font_color", BunkerUI.TEXT_DIM)
+        state.add_theme_font_override("font", BunkerUI.font_mono())
+        state.add_theme_font_size_override("font_size", 13)
+        state.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+        v.add_child(state)
+        if enough and not claimed:
+                tile.pressed.connect(_on_chest_claim.bind(tier))
+        tile.mouse_entered.connect(_play_hover_sound)
+        return tile
+
+
+func _on_chest_claim(tier: int):
+        _play_click_sound()
+        var rewards: Dictionary = Prog.claim_tier(tier)
+        if rewards.is_empty():
+                return
+        var parts: Array[String] = []
+        if int(rewards.get("biomass", 0)) > 0:
+                parts.append("+%d биомассы" % int(rewards["biomass"]))
+        if int(rewards.get("mutant_rolls", 0)) > 0:
+                parts.append("+%d круток мутантов" % int(rewards["mutant_rolls"]))
+        if int(rewards.get("anomaly_rolls", 0)) > 0:
+                parts.append("+%d круток аномалий" % int(rewards["anomaly_rolls"]))
+        _show_message("%s ОТКРЫТ: %s" % [Prog.chest_name(Prog.chest_kind(tier)), ", ".join(parts)], 2.6)
+        _refresh_tasks_panel()
+
+
+func _on_prog_task_done(title: String, xp: int, pts: int):
+        _show_message("ЗАДАЧА ЗАКРЫТА: %s  (+%d опыта, +%d очков)" % [title, xp, pts], 2.6)
+
+
+func _prog_late_story():
+        await get_tree().create_timer(1.3).timeout
+        if not is_instance_valid(self):
+                return
+        Prog.request_story("lab", self)
+
+
+func _on_prog_level_up(lvl: int):
+        _show_message("НОВЫЙ УРОВЕНЬ СТАЛКЕРА: %d" % lvl, 2.6)

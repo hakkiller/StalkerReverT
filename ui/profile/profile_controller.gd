@@ -172,6 +172,49 @@ func _build_header() -> void:
         BunkerUI.style_button(back, "steel", 18)
         back.pressed.connect(_on_back_pressed)
         back.mouse_entered.connect(_play_hover_sound)
+        # Уровень сталкера: плашка УР + шкала опыта (Prog)
+        var lvl_card := PanelContainer.new()
+        var lsb := StyleBoxFlat.new()
+        lsb.bg_color = BunkerUI.STEEL_HI
+        lsb.border_color = BunkerUI.STEEL_EDGE
+        lsb.set_border_width_all(2)
+        lsb.set_corner_radius_all(10)
+        lsb.content_margin_left = 14.0
+        lsb.content_margin_right = 14.0
+        lsb.content_margin_top = 6.0
+        lsb.content_margin_bottom = 6.0
+        lvl_card.add_theme_stylebox_override("panel", lsb)
+        var lv := VBoxContainer.new()
+        lv.add_theme_constant_override("separation", 2)
+        lvl_card.add_child(lv)
+        var lv1 := Label.new()
+        lv1.name = "ProgLvlValue"
+        lv1.text = "УР. %d" % Prog.level()
+        lv1.add_theme_font_override("font", BunkerUI.font_title())
+        lv1.add_theme_font_size_override("font_size", 20)
+        lv1.add_theme_color_override("font_color", BunkerUI.HAZARD_BRIGHT)
+        lv.add_child(lv1)
+        var lv2 := ProgressBar.new()
+        lv2.name = "ProgLvlBar"
+        lv2.custom_minimum_size = Vector2(200, 10)
+        lv2.show_percentage = false
+        var bg_sb := StyleBoxFlat.new()
+        bg_sb.bg_color = Color(0.05, 0.08, 0.05)
+        bg_sb.border_color = BunkerUI.STEEL_EDGE
+        bg_sb.set_border_width_all(1)
+        bg_sb.set_corner_radius_all(4)
+        lv2.add_theme_stylebox_override("background", bg_sb)
+        var fill_sb := StyleBoxFlat.new()
+        fill_sb.bg_color = BunkerUI.GREEN
+        fill_sb.set_corner_radius_all(4)
+        lv2.add_theme_stylebox_override("fill", fill_sb)
+        lv.add_child(lv2)
+        var lv3 := BunkerUI.make_mono_label("опыт 0 / 100", 12, BunkerUI.TEXT_DIM)
+        lv3.name = "ProgLvlSub"
+        lv.add_child(lv3)
+        head.add_child(lvl_card)
+        _hook_prog_plate()
+
         head.add_child(back)
 
 
@@ -1762,3 +1805,33 @@ class HexBadge:
                                         var xoff := sin(t * 1.7 + fi * PI) * rx * 0.35
                                         draw_circle(c + Vector2(xoff, yoff), 1.8,
                                                 Color(light, 0.55 * sin(yy * PI)))
+
+
+# ==================== УРОВЕНЬ СТАЛКЕРА (прогрессия Prog) ====================
+
+var _prog_plate_hooked := false
+
+
+func _hook_prog_plate() -> void:
+        if _prog_plate_hooked:
+                return
+        _prog_plate_hooked = true
+        Prog.xp_changed.connect(_refresh_prog_plate)
+        _refresh_prog_plate(Prog.level(), Prog.xp_in_level(), Prog.xp_need(Prog.level()))
+
+
+func _refresh_prog_plate(lvl: int = 0, xp: int = 0, need: int = 0) -> void:
+        var v: Label = find_child("ProgLvlValue", true, false) as Label
+        var bar: ProgressBar = find_child("ProgLvlBar", true, false) as ProgressBar
+        var sub: Label = find_child("ProgLvlSub", true, false) as Label
+        if v == null or bar == null:
+                return
+        if lvl <= 0:
+                lvl = Prog.level()
+                xp = Prog.xp_in_level()
+                need = Prog.xp_need(lvl)
+        v.text = "УР. %d" % lvl
+        bar.max_value = need
+        bar.value = xp
+        if sub:
+                sub.text = "опыт %d / %d" % [xp, need]

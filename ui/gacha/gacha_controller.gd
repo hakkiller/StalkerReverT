@@ -726,6 +726,9 @@ func _on_spin(times: int) -> void:
         while _session_drops.size() > 12:
                 _session_drops.pop_back()
 
+        # Прогрессия: задачи и опыт за призыв
+        Prog.notify_gacha(times)
+
         _refresh_all()
         # Мигнуть тостом при легендарке
         var any_legend := false

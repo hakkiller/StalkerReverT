@@ -29,6 +29,14 @@ class_name SaveData
 @export var profile_name: String = ""
 
 
+
+# Прогрессия: уровень/опыт, задачи, трек сундуков, онбординг (Prog)
+@export var prog_profile: Dictionary = {}
+@export var prog_quests: Dictionary = {}
+@export var prog_track: Dictionary = {}
+@export var prog_onboard: Dictionary = {}
+
+
 func _init():
     lab_data = LabData.new()
     statistics = GameStatistics.new()
