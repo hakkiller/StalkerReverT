@@ -60,6 +60,8 @@ var emission_timer: float = 0.0
 var is_emission_active: bool = false
 var _mutant_buttons: Dictionary = {}
 var _anomaly_buttons: Dictionary = {}
+var _loadout_orig: Dictionary = {} # исходная геометрия кнопок/панелей набора
+var _loadout_grid: Dictionary = {} # метрики сетки панели: x0/y0/bw/bh/px/py
 # Мобильный режим «тап = ставить»: на таче кнопка включает кисть,
 # тап по земле ставит защиту в точку (Signals.ground_tapped -> zone_controller)
 var _touch_mode: bool = false
@@ -892,9 +894,10 @@ func _rescale_battle_panels() -> void:
                                 start_run_button.add_theme_font_size_override("font_size", 12)
 
 
-# ==================== ПОЛЕВОЙ НАБОР (v0.16.0 «ГЕОФИЗИК») ====================
+# ==================== ПОЛЕВОЙ НАБОР (v0.16.1, «ГЕОФИЗИК») ====================
 # В бой берётся максимум 9 видов аномалий и 9 видов мутантов. До старта забега
-# клик по кнопке панели = взять/снять вид; после старта невзятые заблокированы.
+# клик по кнопке панели = взять/снять вид. После старта в панелях остаются
+# ТОЛЬКО взятые виды: невзятые исчезают, панели поджимаются под состав набора.
 
 const ANOMALY_ORDER := ["heat_anomaly", "electric_anomaly", "acid_anomaly", "gravity_vortex", "gravity_lift", "gravity_whirlwind", "thermal_steam", "thermal_comet", "chemical_jelly", "chemical_gas", "chemical_acid_cloud", "radiation_hotspot", "time_dilation", "teleport", "electric_tesla", "bio_burning_fluff"]
 const MUTANT_ORDER := ["zombie", "dog_mutant", "flesh", "snork_mutant", "pseudodog", "poltergeist", "controller_mutant", "bloodsucker", "chimera", "pseudogiant"]
@@ -904,6 +907,33 @@ func _loadout_init():
                 var gm = get_tree().get_first_node_in_group("game_manager")
                 if gm and gm.has_method("ensure_loadout"):
                                 gm.ensure_loadout(ANOMALY_ORDER, MUTANT_ORDER)
+                if _loadout_orig.is_empty():
+                                for btn in _anomaly_buttons:
+                                                _loadout_orig[btn] = Rect2(btn.offset_left, btn.offset_top, btn.offset_right - btn.offset_left, btn.offset_bottom - btn.offset_top)
+                                for btn in _mutant_buttons:
+                                                _loadout_orig[btn] = Rect2(btn.offset_left, btn.offset_top, btn.offset_right - btn.offset_left, btn.offset_bottom - btn.offset_top)
+                                for setup in [["AnomalyPanel", 8], ["MutantPanel", 5]]:
+                                                var p = get_node_or_null(setup[0])
+                                                if p:
+                                                                _loadout_orig[p] = Rect2(p.offset_left, p.offset_top, p.offset_right - p.offset_left, p.offset_bottom - p.offset_top)
+                                                                var btns: Array = []
+                                                                for c in p.get_children():
+                                                                                if c is Button:
+                                                                                                btns.append(c)
+                                                                if btns.size() >= 2:
+                                                                                var b0: Button = btns[0]
+                                                                                var b1: Button = btns[1]
+                                                                                var ci: int = int(setup[1])
+                                                                                var py: float = 40.0
+                                                                                if btns.size() > ci:
+                                                                                                py = btns[ci].offset_top - b0.offset_top
+                                                                                _loadout_grid[p] = {
+                                                                                                "x0": b0.offset_left, "y0": b0.offset_top,
+                                                                                                "bw": b0.offset_right - b0.offset_left,
+                                                                                                "bh": b0.offset_bottom - b0.offset_top,
+                                                                                                "px": b1.offset_left - b0.offset_left,
+                                                                                                "py": py,
+                                                                                }
                 _refresh_loadout_ui()
 
 
@@ -926,7 +956,9 @@ func _loadout_tap(kind: String, type: String) -> bool:
                 return false
 
 
-## Заголовки панелей со счётчиком + тусклые невзятые кнопки + пометка эксклюзивов
+## Состав панелей и заголовки. До старта — режим набора: все виды на местах,
+## невзятые тусклые. После старта остаются ТОЛЬКО взятые: невзятые исчезают,
+## панели поджимаются под состав набора (до 9 видов аномалий и 9 мутантов).
 func _refresh_loadout_ui():
                 var gm = get_tree().get_first_node_in_group("game_manager")
                 var lab = gm.get_lab_data() if gm else null
@@ -939,20 +971,100 @@ func _refresh_loadout_ui():
                                 anomaly_title.text = "АНОМАЛИИ" if started else "АНОМАЛИИ · В НАБОРЕ %d/9 (клик = взять/снять)" % lab.loadout_count("anomaly")
                 if mutant_title:
                                 mutant_title.text = "МУТАНТЫ" if started else "МУТАНТЫ · В НАБОРЕ %d/9 (клик = взять/снять)" % lab.loadout_count("mutant")
+                if gm and gm.has_method("owned_anomaly_exclusive_for"):
+                                for btn in _anomaly_buttons:
+                                                var ex_t: String = gm.owned_anomaly_exclusive_for(_anomaly_buttons[btn])
+                                                if not ex_t.is_empty() and not btn.text.begins_with("✦"):
+                                                                btn.text = "✦ " + btn.text
+                                                                btn.tooltip_text = "Эксклюзив Чёрного ящика: %s - ставит усиленную версию" % GachaData.display_name(ex_t)
+                var taken_anomalies: Array = []
                 for btn in _anomaly_buttons:
                                 var atype: String = _anomaly_buttons[btn]
                                 var taken: bool = lab.in_loadout("anomaly", atype)
                                 if started:
-                                                btn.disabled = btn.disabled or not taken
-                                btn.modulate = Color(1, 1, 1, 1) if taken else Color(0.6, 0.64, 0.58, 0.72)
-                                if gm and gm.has_method("owned_anomaly_exclusive_for"):
-                                                var ex_t: String = gm.owned_anomaly_exclusive_for(atype)
-                                                if not ex_t.is_empty() and not btn.text.begins_with("✦"):
-                                                                btn.text = "✦ " + btn.text
-                                                                btn.tooltip_text = "Эксклюзив Чёрного ящика: %s - ставит усиленную версию" % GachaData.display_name(ex_t)
+                                                btn.visible = taken
+                                                if taken:
+                                                                taken_anomalies.append(btn)
+                                else:
+                                                btn.visible = true
+                                                _restore_loadout_rect(btn)
+                                                btn.modulate = Color(1, 1, 1, 1) if taken else Color(0.6, 0.64, 0.58, 0.72)
+                _layout_taken(taken_anomalies, get_node_or_null("AnomalyPanel"), 8)
+                var taken_mutants: Array = []
                 for btn in _mutant_buttons:
                                 var mtype: String = _mutant_buttons[btn]
                                 var mtaken: bool = lab.in_loadout("mutant", mtype)
                                 if started:
-                                                btn.disabled = btn.disabled or not mtaken
-                                btn.modulate = Color(1, 1, 1, 1) if mtaken else Color(0.6, 0.64, 0.58, 0.72)
+                                                btn.visible = mtaken
+                                                if mtaken:
+                                                                taken_mutants.append(btn)
+                                else:
+                                                btn.visible = true
+                                                _restore_loadout_rect(btn)
+                                                btn.modulate = Color(1, 1, 1, 1) if mtaken else Color(0.6, 0.64, 0.58, 0.72)
+                _layout_taken(taken_mutants, get_node_or_null("MutantPanel"), 5)
+
+
+## Возврат кнопки на исходное место из сцены (режим набора до старта забега)
+func _restore_loadout_rect(btn: Button) -> void:
+                if _loadout_orig.has(btn):
+                                var r: Rect2 = _loadout_orig[btn]
+                                btn.offset_left = r.position.x
+                                btn.offset_top = r.position.y
+                                btn.offset_right = r.position.x + r.size.x
+                                btn.offset_bottom = r.position.y + r.size.y
+
+
+## Уплотнение взятых кнопок в сетку + поджим панели под состав набора. Панель
+## без взятых видов скрывается. Метрики сетки сняты с реальной раскладки
+## (_rescale_battle_panels либо .tscn) в _loadout_init. До старта панель
+## возвращается в исходный вид.
+func _layout_taken(taken: Array, panel, cols: int) -> void:
+                if panel == null:
+                                return
+                if not start_panel.visible:
+                                if taken.is_empty():
+                                                panel.visible = false
+                                                return
+                                panel.visible = true
+                                var met: Dictionary = _loadout_grid.get(panel, {})
+                                if met.is_empty():
+                                                met = {"x0": 2.0, "y0": 14.0, "bw": 75.0, "bh": 36.0, "px": 78.0, "py": 40.0} if cols == 8 else {"x0": 2.0, "y0": 14.0, "bw": 84.0, "bh": 36.0, "px": 87.0, "py": 40.0}
+                                var px: float = float(met["px"])
+                                var py: float = float(met["py"])
+                                var use_cols: int = mini(cols, taken.size())
+                                var rows: int = int(ceil(float(taken.size()) / float(cols)))
+                                var total := 0
+                                for c in panel.get_children():
+                                                if c is Button:
+                                                                total += 1
+                                var rows_full: int = maxi(rows, int(ceil(float(total) / float(cols))))
+                                var pr: Rect2 = Rect2(panel.offset_left, panel.offset_top, panel.offset_right - panel.offset_left, panel.offset_bottom - panel.offset_top)
+                                if _loadout_orig.has(panel):
+                                                pr = _loadout_orig[panel]
+                                var w: float = pr.size.x - float(cols - use_cols) * px
+                                var h: float = pr.size.y - float(rows_full - rows) * py
+                                panel.offset_top = pr.position.y
+                                panel.offset_bottom = pr.position.y + h
+                                if panel.anchor_left >= 0.5:
+                                                panel.offset_right = pr.position.x + pr.size.x
+                                                panel.offset_left = panel.offset_right - w
+                                else:
+                                                panel.offset_left = pr.position.x
+                                                panel.offset_right = panel.offset_left + w
+                                for i in range(taken.size()):
+                                                var btn: Button = taken[i]
+                                                var col: int = i % cols
+                                                var row: int = int(floor(float(i) / float(cols)))
+                                                btn.offset_left = float(met["x0"]) + float(col) * px
+                                                btn.offset_top = float(met["y0"]) + float(row) * py
+                                                btn.offset_right = btn.offset_left + float(met["bw"])
+                                                btn.offset_bottom = btn.offset_top + float(met["bh"])
+                                return
+                if _loadout_orig.has(panel):
+                                var rp: Rect2 = _loadout_orig[panel]
+                                panel.offset_left = rp.position.x
+                                panel.offset_top = rp.position.y
+                                panel.offset_right = rp.position.x + rp.size.x
+                                panel.offset_bottom = rp.position.y + rp.size.y
+                panel.visible = true
