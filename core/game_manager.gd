@@ -262,6 +262,36 @@ func grant_anomaly_rolls(count: int, _source: String = ""):
         save_to_active_slot()
 
 
+## Эксклюзивный мутант из Чёрного ящика (трек наград): новый -> коллекция,
+## повтор -> копия на ферму (звёздный корм). Возвращает {type, name, status}.
+func grant_exclusive_mutant(type: String) -> Dictionary:
+        var lab = get_lab_data()
+        var ex := GachaData.get_exclusive(type)
+        if ex.is_empty() or lab == null:
+                return {}
+        var status := "new"
+        if lab.unlocked_mutants.has(type):
+                lab.add_farm_copy(type)
+                status = "dup"
+        else:
+                lab.unlocked_mutants.append(type)
+        save_to_active_slot()
+        return {"type": type, "name": str(ex["name"]), "status": status}
+
+
+## Эксклюзивы коллекции: питомцы Чёрных ящиков. Каждый забег начинается
+## со свободным отрядом эксклюзивов у монолита (см. zone_controller).
+func get_owned_exclusives() -> Array:
+        var out: Array = []
+        var lab = get_lab_data()
+        if lab == null:
+                return out
+        for ex in GachaData.EXCLUSIVE_MUTANTS:
+                if lab.unlocked_mutants.has(str(ex["type"])):
+                        out.append(str(ex["type"]))
+        return out
+
+
 # ==================== ГАЧА: КРУТКИ ====================
 
 ## Батч-крутка гачи мутантов: новый -> коллекция, дубль -> копия на ферму.

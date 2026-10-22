@@ -362,6 +362,9 @@ func _collection_types() -> Array:
         for rarity in ["common", "rare", "legendary"]:
                 for t in GachaData.ARTIFACT_POOL[rarity]:
                         out.append(["art", t])
+        # Эксклюзивы Чёрного ящика замыкают коллекцию (фиолетовая рамка)
+        for ex in GachaData.EXCLUSIVE_MUTANTS:
+                out.append(["mut", str(ex["type"])])
         return out
 
 
@@ -563,7 +566,7 @@ func _refresh_header() -> void:
         var unlocked := 0
         if lab:
                 unlocked = lab.unlocked_mutants.size() + lab.won_artifacts.size()
-        var jack_line := "джекпот: Химера · гарантия на 50-м уровне · хранилище %d/28 · дубликаты идут в копии и звёзды" % unlocked
+        var jack_line := "джекпот: Химера · гарантия на 50-м уровне · хранилище %d/%d · дубликаты идут в копии и звёзды" % [unlocked, GachaData.total_collection_size()]
         if _arm == "artifacts":
                 jack_line = "артефактный рукав · бонусы энергии и биомассы · хранилище %d/28" % unlocked
         _jackpot_line.text = jack_line
@@ -628,7 +631,7 @@ func _refresh_collection() -> void:
                 if has:
                         unlocked += 1
                 _coll_box.add_child(_make_coll_tile(kind, type, has))
-        _coll_title.text = "КОЛЛЕКЦИЯ %d/28" % unlocked
+        _coll_title.text = "КОЛЛЕКЦИЯ %d/%d" % [unlocked, GachaData.total_collection_size()]
 
 
 func _make_coll_tile(kind: String, type: String, has: bool) -> Control:
@@ -639,13 +642,19 @@ func _make_coll_tile(kind: String, type: String, has: bool) -> Control:
         tsb.set_border_width_all(2)
         tsb.set_corner_radius_all(8)
         if has:
-                var rar := GachaData.get_mutant_rarity(type) if kind == "mut" else GachaData.get_artifact_rarity(type)
-                tsb.border_color = BunkerUI.RARHEX.get(rar, BunkerUI.STEEL_EDGE)
+                if kind == "mut" and GachaData.is_exclusive(type):
+                        tsb.border_color = Color("b48cff")
+                else:
+                        var rar := GachaData.get_mutant_rarity(type) if kind == "mut" else GachaData.get_artifact_rarity(type)
+                        tsb.border_color = BunkerUI.RARHEX.get(rar, BunkerUI.STEEL_EDGE)
         else:
                 tsb.border_color = Color("232b23")
                 tsb.bg_color = Color("0c0f0c")
         tile.add_theme_stylebox_override("panel", tsb)
-        tile.tooltip_text = Loc.type_name(type) if has else Loc.t("card.locked")
+        if has and kind == "mut" and GachaData.is_exclusive(type):
+                tile.tooltip_text = Loc.type_name(type) + "\nэксклюзив Чёрного ящика"
+        else:
+                tile.tooltip_text = Loc.type_name(type) if has else Loc.t("card.locked")
         var icon := TextureRect.new()
         var path := GachaData.card_icon_path(type, kind == "mut", not has)
         if ResourceLoader.exists(path):

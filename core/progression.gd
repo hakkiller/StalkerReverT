@@ -375,6 +375,7 @@ func chest_contents(tier: int) -> Dictionary:
                 "biomass": int(round(float(bio) * mult * season)),
                 "mutant_rolls": int(ceil(float(mut) * mult * season)),
                 "anomaly_rolls": int(ceil(float(ano) * mult * season)),
+                "exclusive": 1 if kind == "black" else 0,
         }
 
 
@@ -398,6 +399,14 @@ func claim_tier(tier: int) -> Dictionary:
                         gm.grant_mutant_rolls(int(rewards["mutant_rolls"]), "сундук трека")
                 if int(rewards["anomaly_rolls"]) > 0:
                         gm.grant_anomaly_rolls(int(rewards["anomaly_rolls"]), "сундук трека")
+                if int(rewards.get("exclusive", 0)) > 0:
+                        # Чёрный ящик несёт эксклюзивного мутанта (ротация по циклам)
+                        var ex := GachaData.exclusive_for_milestone(track_cycle(), int(tier / 10.0))
+                        var ex_res: Dictionary = gm.grant_exclusive_mutant(str(ex["type"]))
+                        if not ex_res.is_empty():
+                                rewards["exclusive_type"] = str(ex["type"])
+                                rewards["exclusive_name"] = str(ex["name"])
+                                rewards["exclusive_new"] = str(ex_res.get("status", "new")) == "new"
         # Все ступени закрыты: новый цикл, очки обнуляются, награды жирнее.
         var all_done := true
         for i in range(1, TRACK_TIERS + 1):

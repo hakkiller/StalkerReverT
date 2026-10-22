@@ -435,6 +435,8 @@ const DISPLAY_NAMES_EN := {
         "snork_mutant": "Snork", "pseudodog": "Pseudo-dog", "poltergeist": "Poltergeist",
         "controller_mutant": "Controller", "bloodsucker": "Bloodsucker",
         "pseudogiant": "Pseudo-giant", "chimera": "Chimera",
+        "alpha_pseudodog": "Alpha Pseudo-dog", "ash_snork": "Ash Snork",
+        "obsidian_controller": "Obsidian Controller",
         "common_artifact": "Common artifact", "battery_artifact": "Battery",
         "glowstick_artifact": "Glowstick", "slime_artifact": "Slime",
         "spark_artifact": "Spark", "gas_bottle_artifact": "Gas bottle",

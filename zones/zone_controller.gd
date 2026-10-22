@@ -381,6 +381,11 @@ func _initialize_run():
                                 for a in shop.get("artifacts", []):
                                                 _shop_artifacts_pending.append(a)
 
+                # Эксклюзивы Чёрного ящика: питомцы коллекции каждый забег у монолита
+                if gm and gm.has_method("get_owned_exclusives"):
+                                for t in gm.get_owned_exclusives():
+                                                spawn_manager.queue_reward_mutant(t)
+
                 # Артефакты из магазина - приманка у монолита
                 for a in _shop_artifacts_pending:
                                 if anomaly_manager:

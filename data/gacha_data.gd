@@ -118,8 +118,62 @@ const ARTIFACT_BONUS := {
         "legendary": [1200.0, 500.0],
 }
 
+# ЭКСКЛЮЗИВНЫЕ МУТАНТЫ: только из Чёрных ящиков трека наград (ступени 10/20/30).
+# Варианты существующих боевых сцен: окрас + статы поверх базы. Когда появятся
+# отдельные модели художника - заменить сцену по ключу base в spawn_manager.
+# tint - множитель albedo материалов модели, hp/dmg/speed - множители статов.
+const EXCLUSIVE_MUTANTS := [
+        {
+                "type": "alpha_pseudodog", "name": "Альфа-псевдопёс", "base": "pseudodog",
+                "label": "🐺 АЛЬФА-ПСЕВДОПЁС", "accent": "e8eae6", "tint": [1.9, 1.85, 1.8],
+                "hp": 1.4, "dmg": 1.0, "speed": 1.15,
+                "desc": "Белая масть, вожак стаи",
+        },
+        {
+                "type": "ash_snork", "name": "Пепельный снорк", "base": "snork_mutant",
+                "label": "🌫 ПЕПЕЛЬНЫЙ СНОРК", "accent": "b9b4a8", "tint": [0.56, 0.55, 0.52],
+                "hp": 1.0, "dmg": 1.15, "speed": 1.3,
+                "desc": "Серый камуфляж, быстрый и злой",
+        },
+        {
+                "type": "obsidian_controller", "name": "Чёрный контролёр", "base": "controller_mutant",
+                "label": "👁 ЧЁРНЫЙ КОНТРОЛЁР", "accent": "b48cff", "tint": [0.5, 0.44, 0.6],
+                "hp": 1.25, "dmg": 1.3, "speed": 1.0,
+                "desc": "Ночной окрас, психика жёстче",
+        },
+]
+
+
+static func get_exclusive(type: String) -> Dictionary:
+        for ex in EXCLUSIVE_MUTANTS:
+                if str(ex["type"]) == type:
+                        return ex
+        return {}
+
+
+static func is_exclusive(type: String) -> bool:
+        return not get_exclusive(type).is_empty()
+
+
+## Эксклюзив милстоуна: milestone 1..3 = ступени 10/20/30, цикл сдвигает ротацию.
+static func exclusive_for_milestone(cycle: int, milestone: int) -> Dictionary:
+        if EXCLUSIVE_MUTANTS.is_empty():
+                return {}
+        var idx := (maxi(int(cycle), 1) - 1 + maxi(int(milestone), 1) - 1) % EXCLUSIVE_MUTANTS.size()
+        return EXCLUSIVE_MUTANTS[idx]
+
+
+## Полный размер коллекции: пулы гачи + эксклюзивы Чёрных ящиков.
+static func total_collection_size() -> int:
+        var n := EXCLUSIVE_MUTANTS.size()
+        for rarity in MUTANT_POOL:
+                n += MUTANT_POOL[rarity].size()
+        for rarity in ARTIFACT_POOL:
+                n += ARTIFACT_POOL[rarity].size()
+        return n
+
+
 # Круглые волны выживания: сбалансированные награды
-const MILESTONE_WAVES := [10, 20, 30]
 
 # МАГАЗИН: покупка НЕтоповых мутантов и артефактов за биомассу лаборатории.
 # Купленный мутант бесплатно вступит в бой в начале следующего забега,
@@ -151,6 +205,8 @@ const DISPLAY_NAMES := {
         "snork_mutant": "Снорк", "pseudodog": "Псевдопёс", "poltergeist": "Полтергейст",
         "controller_mutant": "Контролёр", "bloodsucker": "Кровосос",
         "pseudogiant": "Псевдогигант", "chimera": "Химера",
+        "alpha_pseudodog": "Альфа-псевдопёс", "ash_snork": "Пепельный снорк",
+        "obsidian_controller": "Чёрный контролёр",
         "common_artifact": "Обычный артефакт", "battery_artifact": "Батарейка",
         "glowstick_artifact": "Светляк", "slime_artifact": "Слизь",
         "spark_artifact": "Искра", "gas_bottle_artifact": "Газовый баллон",
@@ -231,6 +287,8 @@ static func get_artifact_rarity(type: String) -> String:
 
 ## Очки корма за пожертвованный тип
 static func get_fodder_value(type: String, is_mutant: bool) -> int:
+        if is_mutant and is_exclusive(type):
+                return int(FODDER_VALUE.get("legendary", 5))
         var rarity: String = get_mutant_rarity(type) if is_mutant else get_artifact_rarity(type)
         return int(FODDER_VALUE.get(rarity, 1))
 

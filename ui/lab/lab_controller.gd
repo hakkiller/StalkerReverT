@@ -4062,7 +4062,7 @@ func _rebuild_tasks_lists():
         _tasks_section("НЕДЕЛЬНЫЕ · обновятся в понедельник")
         for t in Prog.weekly_tasks():
                 _tasks_lists_box.add_child(_make_task_row("w", t))
-        var note := BunkerUI.make_mono_label("Любой бой даёт опыт и очки трека. Сезон: 30 ступеней — сундуки жирнее к концу трека, ЧЁРНЫЙ ЯЩИК на 10/20/30.", 12, BunkerUI.TEXT_FAINT)
+        var note := BunkerUI.make_mono_label("Любой бой даёт опыт и очки трека. Сезон: 30 ступеней, ЧЁРНЫЙ ЯЩИК на 10/20/30 — несёт эксклюзивного мутанта.", 12, BunkerUI.TEXT_FAINT)
         _tasks_lists_box.add_child(note)
 
 
@@ -4196,6 +4196,8 @@ func _make_chest_tile(tier: int) -> Control:
                 parts.append("крутки мут. ×%d" % int(contents["mutant_rolls"]))
         if int(contents["anomaly_rolls"]) > 0:
                 parts.append("крутки аном. ×%d" % int(contents["anomaly_rolls"]))
+        if int(contents.get("exclusive", 0)) > 0:
+                parts.append("мутант-эксклюзив")
         desc.text = "\n".join(parts)
         desc.add_theme_font_override("font", BunkerUI.font_body())
         desc.add_theme_font_size_override("font_size", 12)
@@ -4238,6 +4240,10 @@ func _on_chest_claim(tier: int):
                 parts.append("+%d круток мутантов" % int(rewards["mutant_rolls"]))
         if int(rewards.get("anomaly_rolls", 0)) > 0:
                 parts.append("+%d круток аномалий" % int(rewards["anomaly_rolls"]))
+        if str(rewards.get("exclusive_type", "")) != "":
+                parts.append("ЭКСКЛЮЗИВ «%s»: %s" % [
+                        str(rewards["exclusive_name"]),
+                        "новый в коллекции" if bool(rewards.get("exclusive_new")) else "повтор — копия на ферму"])
         _show_message("%s ОТКРЫТ: %s" % [Prog.chest_name(Prog.chest_kind(tier)), ", ".join(parts)], 2.6)
         _refresh_tasks_panel()
 

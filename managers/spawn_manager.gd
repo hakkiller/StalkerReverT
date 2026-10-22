@@ -118,6 +118,13 @@ func _ready():
 		"pseudogiant": preload("res://entities/mutants/pseudogiant.tscn"),
 		"zombie": preload("res://entities/mutants/zombie.tscn")
 	}
+
+	# Эксклюзивы Чёрного ящика: тип -> сцена-основа (вариант окраса/статов).
+	# Отдельные модели художника позже заменят сцену по ключу base.
+	for ex in GachaData.EXCLUSIVE_MUTANTS:
+		var base_type: String = str(ex["base"])
+		if mutant_scenes.has(base_type) and not mutant_scenes.has(str(ex["type"])):
+			mutant_scenes[str(ex["type"])] = mutant_scenes[base_type]
 	
 	# print("SpawnManager инициализирован")
 
@@ -444,10 +451,22 @@ func spawn_mutant(mutant_type: String, position: Vector3, _biomass_cost: float) 
 	
 	var hp_mult := health_multiplier * star_mult
 	var dmg_mult := damage_multiplier * star_mult
+	var ex: Dictionary = GachaData.get_exclusive(mutant_type)
+	if not ex.is_empty():
+		hp_mult *= float(ex.get("hp", 1.0))
+		dmg_mult *= float(ex.get("dmg", 1.0))
 	if hp_mult != 1.0 and mutant.has_method("set_health_multiplier"):
 		mutant.set_health_multiplier(hp_mult)
 	if dmg_mult != 1.0 and mutant.has_method("set_damage_multiplier"):
 		mutant.set_damage_multiplier(dmg_mult)
+	
+	if not ex.is_empty() and mutant.has_method("apply_exclusive_variant"):
+		var t: Array = ex.get("tint", [1.0, 1.0, 1.0])
+		var tint := Color(float(t[0]), float(t[1]), float(t[2]))
+		var accent := Color(str(ex.get("accent", "ffffff")))
+		mutant.apply_exclusive_variant(
+			mutant_type, str(ex.get("label", "")), tint,
+			float(ex.get("speed", 1.0)), accent)
 	
 	get_tree().current_scene.add_child(mutant)
 	active_mutants.append(mutant)

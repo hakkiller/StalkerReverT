@@ -146,6 +146,73 @@ func _apply_star_label():
 		label.text += " " + "★".repeat(star_level)
 
 
+# ==================== ЭКСКЛЮЗИВНЫЙ ВАРИАНТ (ЧЁРНЫЙ ЯЩИК) ====================
+
+var _variant_type: String = ""
+var _variant_name: String = ""
+var _variant_tint: Color = Color.WHITE
+var _variant_speed_mult: float = 1.0
+var _variant_accent: Color = Color.WHITE
+
+
+## Вариант окраса/имени для эксклюзивных мутантов трека наград.
+## Зовётся из spawn_manager ДО add_child: перекраска и имя применяются
+## после _ready наследника (deferred), звёзды допишутся поверх имени.
+func apply_exclusive_variant(type: String, display_name: String, tint: Color, speed_mult: float = 1.0, accent: Color = Color.WHITE) -> void:
+	_variant_type = type
+	_variant_name = display_name
+	_variant_tint = tint
+	_variant_speed_mult = speed_mult
+	_variant_accent = accent
+	_apply_variant_look.call_deferred()
+
+
+func _apply_variant_look():
+	# deferred: наследник успевает отработать _ready (перетирает тип/скорость) —
+	# теперь эксклюзив закрепляется поверх.
+	if not _variant_type.is_empty():
+		mutant_type = _variant_type
+	if not is_equal_approx(_variant_speed_mult, 1.0):
+		speed *= _variant_speed_mult
+	if _variant_tint != Color.WHITE:
+		_tint_model(_variant_tint)
+	if _variant_name.is_empty():
+		return
+	var label = get_node_or_null("Label3D")
+	if not label:
+		var found = find_children("*", "Label3D", false, false)
+		if not found.is_empty():
+			label = found[0]
+	if label:
+		label.text = _variant_name
+		if _variant_accent != Color.WHITE:
+			label.modulate = _variant_accent
+
+
+func _tint_model(tint: Color):
+	"""Умножает albedo всех материалов модели на tint (общие ресурсы не трогаем)."""
+	var stack: Array = [self]
+	while not stack.is_empty():
+		var node = stack.pop_back()
+		for child in node.get_children():
+			stack.append(child)
+		var mi := node as MeshInstance3D
+		if mi == null or mi.mesh == null:
+			continue
+		for si in range(mi.mesh.get_surface_count()):
+			var mat := mi.get_active_material(si)
+			var base_mat := mat as BaseMaterial3D
+			if base_mat == null:
+				continue
+			var dup: BaseMaterial3D = base_mat.duplicate()
+			dup.albedo_color = Color(
+				base_mat.albedo_color.r * tint.r,
+				base_mat.albedo_color.g * tint.g,
+				base_mat.albedo_color.b * tint.b,
+				base_mat.albedo_color.a)
+			mi.set_surface_override_material(si, dup)
+
+
 # ==================== СКЕЛЕТНАЯ АНИМАЦИЯ ====================
 # Модели из models/animals/* (CC0, Quaternius): все клипы внутри модели,
 # имена вида «AnimalArmature|Walk». Проигрыватель общий для всех мутантов.
