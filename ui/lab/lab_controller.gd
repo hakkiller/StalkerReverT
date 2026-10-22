@@ -2628,12 +2628,14 @@ func _on_up_auto():
 
 var _recycle_mode: bool = false
 var _recycle_batch: Dictionary = {}
+var _recycle_filter: Array = []  # фильтр редкости (1/2/3/5); пусто = все
 
 
 func _on_recycle_pressed():
         _play_click_sound()
         _recycle_mode = true
         _recycle_batch.clear()
+        _recycle_filter.clear()
         _rebuild_farm_panel()
 
 
@@ -2641,6 +2643,7 @@ func _on_recycle_cancel():
         _play_click_sound()
         _recycle_mode = false
         _recycle_batch.clear()
+        _recycle_filter.clear()
         _rebuild_farm_panel()
 
 
@@ -2682,11 +2685,54 @@ func _rebuild_farm_recycle():
                 ready_label.add_theme_color_override("font_color", Color(1.0, 0.72, 0.25))
                 farm_list.add_child(ready_label)
 
-        var found := false
+        # Состав списка с учётом фильтра редкости
+        var any_copies := false
+        var visible_types: Array = []
+        var visible_copies := 0
         for type in lab_data.unlocked_mutants:
                 var copies: int = lab_data.get_farm_copies(type)
                 if copies <= 0:
                         continue
+                any_copies = true
+                if not _recycle_filter.is_empty() and not _recycle_filter.has(GachaData.get_fodder_value(type, true)):
+                        continue
+                visible_types.append(type)
+                visible_copies += copies
+        # Чипы фильтра редкости (+1/+2/+3/+5)
+        if any_copies:
+                var filter_row := HBoxContainer.new()
+                filter_row.add_theme_constant_override("separation", 5)
+                var filter_label := Label.new()
+                filter_label.text = Loc.t("farm.recycle_filter")
+                filter_label.add_theme_font_size_override("font_size", 11)
+                filter_label.add_theme_color_override("font_color", BunkerUI.TEXT_DIM)
+                filter_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+                filter_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+                filter_row.add_child(filter_label)
+                for rar in [1, 2, 3, 5]:
+                        var chip := Button.new()
+                        chip.text = "+%d" % rar
+                        chip.toggle_mode = true
+                        chip.button_pressed = _recycle_filter.has(rar)
+                        chip.custom_minimum_size = Vector2(44, 30)
+                        chip.tooltip_text = Loc.t("farm.recycle_filter_tip")
+                        BunkerUI.style_button(chip, "ghost", 12)
+                        chip.toggled.connect(_on_recycle_filter_toggled.bind(rar))
+                        filter_row.add_child(chip)
+                farm_list.add_child(filter_row)
+                # Пакетная утилизация: без фильтра - всё, с фильтром - только прошедшее фильтр
+                if visible_copies > 0:
+                        var all_btn := Button.new()
+                        var all_key := "farm.recycle_all_f" if not _recycle_filter.is_empty() else "farm.recycle_all"
+                        all_btn.text = Loc.t(all_key, {"n": visible_copies})
+                        all_btn.tooltip_text = Loc.t("farm.recycle_filter_tip")
+                        all_btn.custom_minimum_size = Vector2(0, 38)
+                        BunkerUI.style_button(all_btn, "hazard", 13)
+                        all_btn.pressed.connect(_on_recycle_all_pressed)
+                        farm_list.add_child(all_btn)
+        var found := false
+        for type in visible_types:
+                var copies: int = lab_data.get_farm_copies(type)
                 found = true
                 var row := HBoxContainer.new()
                 row.add_theme_constant_override("separation", 6)
@@ -2717,7 +2763,7 @@ func _rebuild_farm_recycle():
                 farm_list.add_child(row)
         if not found:
                 var none := Label.new()
-                none.text = Loc.t("farm.recycle_nothing")
+                none.text = Loc.t("farm.recycle_filter_empty") if any_copies else Loc.t("farm.recycle_nothing")
                 farm_list.add_child(none)
 
         var confirm := Button.new()
@@ -2726,6 +2772,14 @@ func _rebuild_farm_recycle():
         confirm.custom_minimum_size = Vector2(0, 36)
         confirm.pressed.connect(_on_recycle_confirm)
         farm_list.add_child(confirm)
+
+        if not _recycle_batch.is_empty():
+                var clear := Button.new()
+                clear.text = Loc.t("farm.recycle_clear")
+                clear.custom_minimum_size = Vector2(0, 32)
+                BunkerUI.style_button(clear, "ghost", 12)
+                clear.pressed.connect(_on_recycle_clear)
+                farm_list.add_child(clear)
 
         var cancel := Button.new()
         cancel.text = Loc.t("lab.back")
@@ -2745,6 +2799,35 @@ func _on_recycle_remove(type: String):
         _rebuild_farm_panel()
 
 
+func _on_recycle_filter_toggled(toggled_on: bool, rar: int) -> void:
+        _play_click_sound()
+        if toggled_on:
+                if not _recycle_filter.has(rar):
+                        _recycle_filter.append(rar)
+        else:
+                _recycle_filter.erase(rar)
+        _rebuild_farm_panel()
+
+
+func _on_recycle_all_pressed() -> void:
+        _play_click_sound()
+        # Без фильтра - все копии; с фильтром - только строки, прошедшие фильтр
+        for type in lab_data.unlocked_mutants:
+                var copies: int = lab_data.get_farm_copies(type)
+                if copies <= 0:
+                        continue
+                if not _recycle_filter.is_empty() and not _recycle_filter.has(GachaData.get_fodder_value(type, true)):
+                        continue
+                _recycle_batch[type] = copies
+        _rebuild_farm_panel()
+
+
+func _on_recycle_clear() -> void:
+        _play_click_sound()
+        _recycle_batch.clear()
+        _rebuild_farm_panel()
+
+
 func _on_recycle_confirm():
         _play_click_sound()
         var result: Dictionary = game_manager.recycle_copies(_recycle_batch)
@@ -2753,6 +2836,7 @@ func _on_recycle_confirm():
         else:
                 _show_message(Loc.t("farm.recycle_zero"), 1.5)
         _recycle_batch.clear()
+        _recycle_filter.clear()
         _rebuild_farm_panel()
         _refresh_ui()
 
