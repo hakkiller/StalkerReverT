@@ -72,13 +72,16 @@ func _find_new_target():
 
 
 func _patrol(delta):
-	_find_new_target()
+	# Перф (v0.23.1): скан целей не каждый физ-кадр
+	if _target_scan_tick(delta):
+		_find_new_target()
 	super._patrol(delta)
 
 
 func _chase(_delta):
 	if not target_stalker or not is_instance_valid(target_stalker):
-		_find_new_target()
+		if _target_scan_tick(_delta):
+			_find_new_target()
 		if not target_stalker:
 			current_state = State.PATROL
 			return

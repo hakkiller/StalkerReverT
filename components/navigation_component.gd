@@ -172,7 +172,20 @@ func _physics_process(_delta):
 	# Стенка по курсу: RVO знает только про других агентов, а не про строения.
 	# Если луч вперёд упирается в крутизну (стена), скользим вдоль неё -
 	# сталкер огибает дом по стенке вместо давления лбом в угол.
-	desired_velocity = _slide_along_walls(desired_velocity)
+	# Перф (v0.23.1): луч вдоль стены — по интервалу или при заметном повороте
+	_wall_check_cd -= _delta
+	var moving := desired_velocity.length_squared() > 0.01
+	if not moving:
+		_wall_check_cd = 0.0
+		_last_ray_dir = Vector3.ZERO
+	else:
+		var turn := false
+		if _last_ray_dir.length_squared() > 0.01:
+			turn = desired_velocity.normalized().dot(_last_ray_dir) < 0.94
+		if _wall_check_cd <= 0.0 or turn:
+			_wall_check_cd = WALL_CHECK_INTERVAL
+			_last_ray_dir = desired_velocity.normalized()
+			desired_velocity = _slide_along_walls(desired_velocity)
 	desired_velocity.y = 0
 	_last_desired = desired_velocity
 	
@@ -185,6 +198,10 @@ func _physics_process(_delta):
 
 
 var _last_desired := Vector3.ZERO
+# Перф (v0.23.1): луч "вдоль стены" — не каждый физ-кадр
+const WALL_CHECK_INTERVAL: float = 0.12
+var _wall_check_cd: float = 0.0
+var _last_ray_dir := Vector3.ZERO
 
 func _slide_along_walls(velocity: Vector3) -> Vector3:
 	"""Крутизна впереди в 1.2м - проецируем скорость на плоскость стенки.

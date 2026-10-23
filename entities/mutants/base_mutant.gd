@@ -39,6 +39,10 @@ var disable_body_bob := false  # у модели есть риг и AnimationPla
 var _air_time: float = 0.0
 var _stuck_pos: Vector3 = Vector3.ZERO
 var _stuck_time: float = 0.0
+# Перф (v0.23.1): поиск целей не каждый физ-кадр — толпа мутантов x сталкеры
+# превращалась в O(N*M)*60fps. Скан не чаще 0.35с, фаза сдвинута случайно.
+const TARGET_SCAN_INTERVAL: float = 0.35
+var _target_scan_cd: float = 0.0
 
 # Скелетная анимация (модели models/animals/* и кровосос):
 # клипы подбираются по суффиксам имён («AnimalArmature|Walk» -> Walk)
@@ -410,7 +414,9 @@ func _patrol(_delta):
 		# Если нет точек патруля, просто стоим
 		if navigation_component and not navigation_component.is_navigating():
 			# Ищем сталкеров
-			_find_best_target()
+			# Ищем сталкеров (редко: перф толпы, v0.23.1)
+			if _target_scan_tick(_delta):
+				_find_best_target()
 		return
 	
 	var target_pos = patrol_points[current_patrol_index]
@@ -428,12 +434,14 @@ func _patrol(_delta):
 			navigation_component.move_to(patrol_points[current_patrol_index])
 	
 	# В патруле тоже ищем цели
-	_find_best_target()
+	if _target_scan_tick(_delta):
+		_find_best_target()
 
 
 func _chase(_delta):
 	if not target_stalker or not is_instance_valid(target_stalker) or (target_stalker.has_method("is_alive") and not target_stalker.is_alive()):
-		_find_best_target()
+		if _target_scan_tick(_delta):
+			_find_best_target()
 		if not target_stalker:
 			current_state = State.PATROL
 			target_stalker = null
@@ -509,6 +517,16 @@ func _find_best_target():
 		current_state = State.CHASE
 		spotted_stalker.emit(nearest)
 		# "Мутант нашёл цель: ", nearest.name  # (лог отключён)
+
+
+## Общий троттлинг скана целей (v0.23.1): не чаще TARGET_SCAN_INTERVAL секунд.
+## Фаза сдвинута randf() — толпа не сканирует в одном и том же кадре. true = пора.
+func _target_scan_tick(delta: float) -> bool:
+	_target_scan_cd -= delta
+	if _target_scan_cd > 0.0:
+		return false
+	_target_scan_cd = TARGET_SCAN_INTERVAL + randf() * 0.1
+	return true
 
 
 func _on_stalker_detected(body: Node3D):

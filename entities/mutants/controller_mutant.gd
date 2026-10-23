@@ -46,6 +46,10 @@ func _physics_process(delta):
 
 
 func _patrol(delta):
+	# Перф (v0.23.1): скан целей не каждый физ-кадр
+	if not _target_scan_tick(delta):
+		super._patrol(delta)
+		return
 	var stalkers = get_tree().get_nodes_in_group("stalkers")
 	var nearest_stalker = null
 	var nearest_dist = INF

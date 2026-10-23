@@ -56,6 +56,11 @@ var zone_controller: Node
 var emission_cooldown: float = 60.0
 var _break_time_left: float = 0.0
 var _break_next_wave: int = 0
+# Перф (v0.23.1): пер-кадровые тексты — только при изменении, статус 4 раза/с
+var _status_accum: float = 0.0
+var _last_stalkers_text: String = ""
+var _last_emission_sec: int = -1
+var _last_break_sec: int = -1
 var emission_timer: float = 0.0
 var is_emission_active: bool = false
 var _mutant_buttons: Dictionary = {}
@@ -350,7 +355,10 @@ func _play_click_sound():
 func _process(delta):
                 if emission_timer > 0:
                                 emission_timer -= delta
-                                emission_timer_label.text = "⌛ %dс" % int(emission_timer)
+                                var _esec := int(emission_timer)
+                                if _esec != _last_emission_sec:
+                                    _last_emission_sec = _esec
+                                    emission_timer_label.text = "⌛ %dс" % _esec
                                 emission_timer_label.visible = true
                 else:
                                 emission_timer_label.visible = false
@@ -362,11 +370,23 @@ func _process(delta):
                                 _break_time_left -= delta
                                 wave_label.visible = true
                                 wave_label.modulate = Color(1, 0.8, 0.2)
-                                wave_label.text = Loc.t("hud.break_countdown", {"cur": _break_next_wave, "max": _get_max_waves(), "sec": int(ceil(_break_time_left))})
+                                var _bsec := int(ceil(_break_time_left))
+                                if _bsec != _last_break_sec:
+                                    _last_break_sec = _bsec
+                                    wave_label.text = Loc.t("hud.break_countdown", {"cur": _break_next_wave, "max": _get_max_waves(), "sec": _bsec})
 
                 if zone_controller:
-                                var status = zone_controller.get_status()
-                                stalker_count_label.text = "👥 Сталкеров: %d" % status.get("stalkers", 0)
+                                # Перф (v0.23.1): статус не чаще 4 раз/с, текст — только при изменении
+                                _status_accum += delta
+                                if _status_accum >= 0.25:
+                                                _status_accum = 0.0
+                                                var sc: int = 0
+                                                if zone_controller != null and zone_controller.get("spawn_manager") != null:
+                                                                sc = zone_controller.spawn_manager.get_stalker_count()
+                                                var stxt := "👥 Сталкеров: %d" % sc
+                                                if stxt != _last_stalkers_text:
+                                                                _last_stalkers_text = stxt
+                                                                stalker_count_label.text = stxt
 
 
 func _on_energy_changed(current: float, max_val: float):
