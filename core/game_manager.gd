@@ -318,6 +318,16 @@ func owned_anomaly_exclusive_for(base_type: String) -> String:
                         return str(ex["type"])
         return ""
 
+## Эксклюзивный мутант Чёрного ящика, заменяющий базовый вид в бою (v0.21.0)
+func owned_mutant_exclusive_for(base_type: String) -> String:
+        var lab = get_lab_data()
+        if lab == null:
+                return ""
+        for ex in GachaData.EXCLUSIVE_MUTANTS:
+                if str(ex["base"]) == base_type and lab.unlocked_mutants.has(str(ex["type"])):
+                        return str(ex["type"])
+        return ""
+
 
 ## Автосбор полевого набора: пустые списки заполняются первыми 9 открытыми
 ## видами (порядок как в HUD). Вызывается из HUD при входе в бой.
@@ -332,11 +342,20 @@ func ensure_loadout(anomaly_order: Array, mutant_order: Array) -> void:
                         var art_key := GachaData.get_artifact_for_anomaly(str(t))
                         if art_key.is_empty() or is_artifact_unlocked(art_key):
                                 lab.loadout_anomalies.append(str(t))
+        # Эксклюзивы Чёрного ящика в наборе переводим на базовый вид: кнопка боя
+        # у базы, усиленный вариант ставит Зона при спавне (v0.21.0)
+        var normalized: Array[String] = []
+        for t in lab.loadout_mutants:
+                var ex_base: String = GachaData.exclusive_base_of(str(t))
+                var base_type: String = ex_base if not ex_base.is_empty() else str(t)
+                if not normalized.has(base_type):
+                        normalized.append(base_type)
+        lab.loadout_mutants = normalized
         if lab.loadout_mutants.is_empty():
                 for t in mutant_order:
                         if lab.loadout_mutants.size() >= LabData.MAX_LOADOUT:
                                 break
-                        if is_mutant_unlocked(str(t)):
+                        if is_mutant_unlocked(str(t)) or not owned_mutant_exclusive_for(str(t)).is_empty():
                                 lab.loadout_mutants.append(str(t))
         save_to_active_slot()
 

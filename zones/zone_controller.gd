@@ -1056,17 +1056,25 @@ func spawn_mutant(mutant_type: String, position: Vector3) -> Node:
 
                 # Гейтинг коллекции: не разблокирован кампанией/гачей - в бой не применить.
                 # Наградные мутанты идут мимо (spawn_manager напрямую) - они уже разблокированы.
+                # Эксклюзив Чёрного ящика заменяет базу: владеешь Пепельным снорком -
+                # кнопка снорка ставит его (v0.21.0)
                 var gm = get_tree().get_first_node_in_group("game_manager")
-                if gm and not gm.is_mutant_unlocked(mutant_type):
-                                pass # print("Зона: мутант не разблокирован - откройте его кампанией или гачей: " + mutant_type)
-                                return null
+                var ex_type: String = ""
+                if gm:
+                                if gm.has_method("owned_mutant_exclusive_for"):
+                                                ex_type = gm.owned_mutant_exclusive_for(mutant_type)
+                                if not gm.is_mutant_unlocked(mutant_type) and ex_type.is_empty():
+                                                pass # print("Зона: мутант не разблокирован - откройте его кампанией или гачей: " + mutant_type)
+                                                return null
 
                 var cost = spawn_manager.get_mutant_cost(mutant_type)
                 if not resource_manager.spend_biomass(cost):
                                 pass # print("Недостаточно биомассы для " + mutant_type + " (нужно: " + str(cost) + ")")
                                 return null
 
-                return spawn_manager.spawn_mutant(mutant_type, position, cost)
+                var spawn_type: String = ex_type if not ex_type.is_empty() else mutant_type
+                # Звёзды прокачки хранятся по базовому виду - передаём базу отдельно
+                return spawn_manager.spawn_mutant(spawn_type, position, cost, mutant_type)
 
 # Регистрация
 func register_stalker(_stalker: Node):

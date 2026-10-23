@@ -205,6 +205,13 @@ static func get_exclusive(type: String) -> Dictionary:
                         return ex
         return {}
 
+## База эксклюзивного мутанта (v0.21.0): ash_snork -> snork_mutant. Не эксклюзив - пусто.
+static func exclusive_base_of(type: String) -> String:
+        for ex in EXCLUSIVE_MUTANTS:
+                if str(ex["type"]) == type:
+                        return str(ex["base"])
+        return ""
+
 
 static func is_exclusive(type: String) -> bool:
         return not get_exclusive(type).is_empty()

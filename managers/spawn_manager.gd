@@ -427,7 +427,7 @@ func _on_stalker_died(stalker: Node):
 
 # ==================== МУТАНТЫ ====================
 
-func spawn_mutant(mutant_type: String, position: Vector3, _biomass_cost: float) -> Node:
+func spawn_mutant(mutant_type: String, position: Vector3, _biomass_cost: float, stars_for: String = "") -> Node:
 	if not mutant_scenes.has(mutant_type):
 		# print("Неизвестный тип мутанта: " + mutant_type)
 		return null
@@ -444,7 +444,8 @@ func spawn_mutant(mutant_type: String, position: Vector3, _biomass_cost: float) 
 	mutant.position = position
 	
 	# Звёздность типа: множитель статов + уровень для подписи
-	var stars := maxi(int(mutant_stars.get(mutant_type, 1)), 1)
+	var star_key: String = stars_for if not stars_for.is_empty() else mutant_type
+	var stars := maxi(int(mutant_stars.get(star_key, 1)), 1)
 	var star_mult := LabData.get_star_stat_mult(stars)
 	if stars > 1 and mutant.has_method("set_star_level"):
 		mutant.set_star_level(stars)
