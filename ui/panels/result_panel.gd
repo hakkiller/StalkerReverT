@@ -46,6 +46,15 @@ func show_result(result: Dictionary):
 
     if result.get("mode", "") == "survival":
         stats_label.text += "\nВолн пройдено: %d" % int(result.get("waves_survived", 0))
+        # Логика победы v0.21.0: причина исхода выживания
+        var vreason := str(result.get("victory_reason", ""))
+        var atarget := int(result.get("arena_target_wave", 0))
+        if success and vreason == "arena_target":
+            stats_label.text += "\nВЫЗОВ ВЫИГРАН: волна %d превзойдена!" % atarget
+        elif success and vreason == "waves30":
+            stats_label.text += "\nЛЕГЕНДА: 30+ волн пережито - ПОБЕДА!"
+        elif atarget > 0:
+            stats_label.text += "\nЦель вызова: волна %d (не превзойдена)" % atarget
     
     if result.has("artifacts_collected"):
         var common = 0

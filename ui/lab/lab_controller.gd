@@ -3743,9 +3743,16 @@ func _on_arena_challenge(foe_name: String):
         _play_click_sound()
         if not game_manager:
                 return
+        # Цель вызова (v0.21.0 «ЛИГА ВОЛН»): превзошёл волну соперника - ПОБЕДА
+        var target_wave := 0
         if foe_name != "БЫСТРЫЙ ВЫЗОВ":
-                _show_message("Вызов принят: %s. Готовьте отряд!" % foe_name, 1.6)
+                for r in _arena_make_rivals():
+                        if str(r.get("name", "")) == foe_name:
+                                target_wave = int(r.get("wave", 0))
+                                break
+                _show_message("Вызов принят: %s. Цель - превзойти волну %d!" % [foe_name, target_wave], 1.6)
         game_manager.arena_run_kind = "challenge"
+        game_manager.arena_target_wave = target_wave
         _arena_season_timer.stop()
         game_manager.set_selected_run_mode("survival")
         _refresh_campaign_ui()

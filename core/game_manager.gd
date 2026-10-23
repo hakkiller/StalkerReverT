@@ -1120,6 +1120,11 @@ func _apply_campaign_result(result: Dictionary):
 ## Ставится lab_controller перед стартом выживания, гасится в process_run_result
 var arena_run_kind: String = ""
 
+## Арена-вызов: волна соперника, которую надо превзойти (0 - вольный забег).
+## Ставится lab_controller при принятии вызова; ZoneController читает при сборе
+## результата (прошёл больше волн, чем у вызванного = ПОБЕДА); гасится в process_run_result
+var arena_target_wave: int = 0
+
 
 func process_run_result(result: Dictionary):
         pass # print("Обработка результатов забега: " + str(result))
@@ -1129,6 +1134,9 @@ func process_run_result(result: Dictionary):
 
         # Прогрессия: опыт/задачи/трек от любого забега (кампания/выживание/башня/арена)
         Prog.on_run_result(result)
+
+        # Цель вызова арены прочитана Зоной при сборе результата - дальше не нужна
+        arena_target_wave = 0
 
         var reward = result.get("reward", 0.0)
         lab.biomass += reward

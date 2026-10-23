@@ -1181,9 +1181,26 @@ func _collect_run_result(success: bool) -> Dictionary:
                 # Выживание: награда за пройденные волны платится при любом исходе -
                 # смерть здесь ожидаемый конец забега, а не провал
                 var waves_survived := 0
+                var final_success := success
+                var victory_reason := ""
+                var arena_target := 0
                 if run_params.get("run_mode", "") == "survival":
                                 waves_survived = maxi(0, (spawn_manager.current_wave if spawn_manager else 1) - 1)
                                 reward += SurvivalData.wave_bonus(waves_survived)
+                                # Логика победы (v0.21.0 «ЛИГА ВОЛН»):
+                                # 1) арена-вызов: волна вызванного превзойдена - ПОБЕДА
+                                var gm_node = get_tree().get_first_node_in_group("game_manager")
+                                if gm_node != null:
+                                                var t = gm_node.get("arena_target_wave")
+                                                if t != null:
+                                                                arena_target = int(t)
+                                if arena_target > 0 and waves_survived > arena_target:
+                                                final_success = true
+                                                victory_reason = "arena_target"
+                                # 2) пережил 30+ волн - ПОБЕДА независимо от волны гибели
+                                elif waves_survived >= SurvivalData.VICTORY_WAVE:
+                                                final_success = true
+                                                victory_reason = "waves30"
 
                 var stats = {
                                 "stalkers_killed": progression_manager.get_stalkers_killed() if progression_manager else 0,
@@ -1195,7 +1212,7 @@ func _collect_run_result(success: bool) -> Dictionary:
                 }
 
                 return {
-                                "success": success,
+                                "success": final_success,
                                 "run_number": run_number,
                                 "mode": str(run_params.get("run_mode", "campaign")),
                         "tower_floor": int(run_params.get("tower_floor", 0)),
@@ -1204,6 +1221,8 @@ func _collect_run_result(success: bool) -> Dictionary:
                         "pulses_used": event_manager.get_pulse_count() if event_manager else 0,
                                 "campaign_level": int(run_params.get("campaign_level", 0)),
                                 "waves_survived": waves_survived,
+                                "victory_reason": victory_reason,
+                                "arena_target_wave": arena_target,
                                 "reward": reward,
                                 "statistics": stats,
                                 "gacha_rewards": _gacha_rewards_log.duplicate(),
