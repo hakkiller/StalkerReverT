@@ -586,6 +586,39 @@ func buy_season_copy(mutant_type: String) -> bool:
         return true
 
 
+func buy_season_mutant(type: String) -> Dictionary:
+        """Мутант гачи за СП (v0.22.0): новый -> коллекция, дубликат -> копия на ферму"""
+        var price := _season_price("mut", type)
+        if price <= 0 or get_lab_data() == null:
+                return {}
+        if not season_spend(price):
+                return {}
+        var lab = get_lab_data()
+        var status := "new"
+        if lab.unlocked_mutants.has(type):
+                lab.add_farm_copy(type)
+                status = "dup"
+        else:
+                lab.unlocked_mutants.append(type)
+        save_to_active_slot()
+        return {"type": type, "name": GachaData.display_name(type), "status": status}
+
+
+func buy_season_artifact(type: String) -> bool:
+        """Артефакт за СП (v0.22.0): аномалия откроется, артефакт придёт в бой"""
+        var price := _season_price("art", type)
+        var lab = get_lab_data()
+        if price <= 0 or lab == null:
+                return false
+        if not season_spend(price):
+                return false
+        lab.pending_artifacts.append(type)
+        if not lab.won_artifacts.has(type):
+                lab.won_artifacts.append(type)
+        save_to_active_slot()
+        return true
+
+
 ## ===== ОБМЕННИК (v0.19.0): артефакты выбросов и биомасса -> очки сезона =====
 func exchange_all_artifacts_to_sp() -> Dictionary:
         var lab = get_lab_data()
@@ -600,6 +633,23 @@ func exchange_all_artifacts_to_sp() -> Dictionary:
         lab.artifacts_common.clear()
         lab.artifacts_rare.clear()
         lab.artifacts_legendary.clear()
+        lab.season_points += sp
+        save_to_active_slot()
+        return {"count": count, "sp": sp}
+
+
+func exchange_all_farm_copies_to_sp() -> Dictionary:
+        """Копии фермы -> СП (v0.22.0): 1 копия = 2 СП, излишки дубликатов и копий с событий"""
+        var lab = get_lab_data()
+        if lab == null:
+                return {}
+        var count := 0
+        for t in lab.farm_copies:
+                count += int(lab.farm_copies[t])
+        if count <= 0:
+                return {}
+        var sp: int = count * int(GachaData.EXCHANGE_COPY_SP)
+        lab.farm_copies.clear()
         lab.season_points += sp
         save_to_active_slot()
         return {"count": count, "sp": sp}

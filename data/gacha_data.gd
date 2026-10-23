@@ -258,6 +258,30 @@ const SEASON_SHOP := [
         ["ex_anom", "ash_tornado", "Пепельный вихрь", 250],
         ["ex_anom", "crimson_heat", "Багровая жара", 250],
         ["ex_anom", "void_loop", "Пустотная петля", 250],
+        # ВЕСЬ МАГАЗИН (v0.22.0 «ПОЛНЫЙ БАЗАР»): топы гачи в коллекцию и весь
+        # артефактный пул за СП - кампания/гача больше не единственный путь.
+        # mut: новый -> коллекция, дубликат -> копия на ферму (как эксклюзивы).
+        # art: аномалия открывается, артефакт приходит в бой (как магазин за биомассу).
+        ["mut", "pseudogiant", "Псевдогигант", 180],
+        ["mut", "chimera", "Химера", 240],
+        ["art", "common_artifact", "Обычный артефакт", 8],
+        ["art", "battery_artifact", "Батарейка", 8],
+        ["art", "glowstick_artifact", "Светляк", 8],
+        ["art", "slime_artifact", "Слизь", 8],
+        ["art", "spark_artifact", "Искра", 8],
+        ["art", "gas_bottle_artifact", "Газовый баллон", 8],
+        ["art", "rare_artifact", "Редкий артефакт", 25],
+        ["art", "energy_artifact", "Энергетик", 25],
+        ["art", "clock_artifact", "Часы", 25],
+        ["art", "hourglass_artifact", "Песочные часы", 25],
+        ["art", "graviton_artifact", "Гравитон", 25],
+        ["art", "fireball_artifact", "Огненный шар", 25],
+        ["art", "jumper_artifact", "Прыгун", 25],
+        ["art", "flesh_artifact", "Живая плоть", 25],
+        ["art", "void_artifact", "Пустота", 60],
+        ["art", "heart_artifact", "Сердце Озера", 60],
+        ["art", "storm_artifact", "Гроза", 60],
+        ["art", "uranium_artifact", "Уран", 60],
         ["rolls_mut", "", "Крутки мутантов x10", 45],
         ["rolls_art", "", "Крутки артефактов x10", 45],
         ["biomass", "", "Биомасса 100 000", 40],
@@ -269,6 +293,7 @@ const SEASON_SHOP := [
 const EXCHANGE_ARTIFACT_SP := {"common": 1, "rare": 3, "legendary": 10}
 const EXCHANGE_BIOMASS_STEP := 50000
 const EXCHANGE_BIOMASS_SP := 5
+const EXCHANGE_COPY_SP := 2
 
 
 # КОРМ ЗВЁЗД: дубликат того же типа даёт звезду сразу; слабые типы можно

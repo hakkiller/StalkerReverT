@@ -754,6 +754,10 @@ func _rebuild_shop_season():
                         sub = "ЭКСКЛЮЗИВ · боец набора" + ("; дубликат = +1 копия" if (lab_data and lab_data.unlocked_mutants.has(type)) else "")
                 elif kind == "ex_anom":
                         sub = "ЭКСКЛЮЗИВ · аномалия боя" + ("; дубликат = +400 био" if (lab_data and lab_data.exclusive_anomalies.has(type)) else "")
+                elif kind == "mut":
+                        sub = "в коллекцию" + ("; дубликат = копия на ферму" if (lab_data and lab_data.unlocked_mutants.has(type)) else "")
+                elif kind == "art":
+                        sub = "аномалия откроется, артефакт придёт в бой"
                 elif kind == "rolls_mut":
                         sub = "+10 круток гачи мутантов"
                 elif kind == "rolls_art":
@@ -765,9 +769,9 @@ func _rebuild_shop_season():
                 var btn := Button.new()
                 btn.text = item + "\n" + str(price) + " СП"
                 btn.tooltip_text = sub
-                if kind == "ex_mut" or kind == "copy":
+                if kind == "ex_mut" or kind == "copy" or kind == "mut":
                         _add_card_icon(btn, type, true)
-                elif kind == "ex_anom":
+                elif kind == "ex_anom" or kind == "art":
                         _add_card_icon(btn, type, false)
                 if lab_data and sp < price:
                         btn.disabled = true
@@ -811,8 +815,23 @@ func _rebuild_shop_exchange():
         row2.pressed.connect(_on_exchange_biomass)
         row2.mouse_entered.connect(_play_hover_sound)
         exchange_box.add_child(row2)
+        var copies := 0
+        if lab_data:
+                for t in lab_data.farm_copies:
+                        copies += int(lab_data.farm_copies[t])
+        var row3 := Button.new()
+        if copies <= 0:
+                row3.text = "Копий на ферме нет\n(дубликаты гачи и копии с событий копятся тут)"
+                row3.disabled = true
+        else:
+                row3.text = "Копии фермы: %d шт\nОБМЕНЯТЬ ВСЕ -> +%d СП" % [copies, copies * int(GachaData.EXCHANGE_COPY_SP)]
+                row3.tooltip_text = "Внимание: копии - это корм звёзд. Продавай только излишки!"
+                row3.pressed.connect(_on_exchange_copies)
+        row3.custom_minimum_size = Vector2(0, 56)
+        row3.mouse_entered.connect(_play_hover_sound)
+        exchange_box.add_child(row3)
         var cap := Label.new()
-        cap.text = "Курс: обычный артефакт = 1 СП, редкий = 3 СП,\nлегендарный = 10 СП. Артефакты падают на выбросах.\nСП также дают: вызов +5, оборона +10,\nпережитый выброс +3, задачи и медали сезона."
+        cap.text = "Курс: обычный артефакт = 1 СП, редкий = 3 СП,\nлегендарный = 10 СП, копия фермы = 2 СП.\nАртефакты падают на выбросах. СП также дают:\nвызов +5, оборона +10, пережитый выброс +3,\nзадачи и медали сезона."
         cap.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
         cap.add_theme_font_size_override("font_size", 12)
         exchange_box.add_child(cap)
@@ -823,6 +842,11 @@ func _on_season_buy(kind: String, type: String, price: int):
         var res: Dictionary = {}
         if kind == "ex_mut" or kind == "ex_anom":
                 res = game_manager.buy_season_exclusive(kind, type)
+        elif kind == "mut":
+                res = game_manager.buy_season_mutant(type)
+        elif kind == "art":
+                if game_manager.buy_season_artifact(type):
+                        res = {"name": GachaData.display_name(type)}
         elif kind == "rolls_mut":
                 if game_manager.buy_season_rolls("mutants", 10):
                         res = {"name": "Крутки мутантов x10"}
@@ -841,7 +865,7 @@ func _on_season_buy(kind: String, type: String, price: int):
         var msg := ""
         if res.has("status"):
                 if str(res.get("status")) == "dup":
-                        msg = str(res.get("name", "")) + ": дубликат -> " + ("копия на ферму" if kind == "ex_mut" else "+400 биомассы")
+                        msg = str(res.get("name", "")) + ": дубликат -> " + ("копия на ферму" if (kind == "ex_mut" or kind == "mut") else "+400 биомассы")
                 else:
                         msg = "ЭКСКЛЮЗИВ: " + str(res.get("name", "")) + " - в коллекции!"
         else:
@@ -859,6 +883,18 @@ func _on_exchange_artifacts():
                 _show_message("Артефактов с выбросов нет", 1.2)
                 return
         _show_message("Обмен: %d артефактов -> +%d СП" % [int(res.get("count", 0)), int(res.get("sp", 0))], 2.2)
+        lab_data = game_manager.get_lab_data()
+        _rebuild_shop()
+        _refresh_ui()
+
+
+func _on_exchange_copies():
+        _play_click_sound()
+        var res: Dictionary = game_manager.exchange_all_farm_copies_to_sp()
+        if res.is_empty():
+                _show_message("Копий на ферме нет", 1.2)
+                return
+        _show_message("Обмен: %d копий -> +%d СП" % [int(res.get("count", 0)), int(res.get("sp", 0))], 2.2)
         lab_data = game_manager.get_lab_data()
         _rebuild_shop()
         _refresh_ui()
