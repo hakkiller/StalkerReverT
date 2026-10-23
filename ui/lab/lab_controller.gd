@@ -1858,7 +1858,7 @@ func _build_language_button():
                 return
         _lang_button = Button.new()
         _lang_button.text = Loc.t("menu.language")
-        _lang_button.position = Vector2(30, 262)
+        _lang_button.position = Vector2(30, 282)
         _lang_button.size = Vector2(340, 34)
         _lang_button.pressed.connect(_on_language_pressed)
         _lang_button.mouse_entered.connect(_play_hover_sound)
@@ -1868,6 +1868,8 @@ func _build_language_button():
 func _on_language_pressed():
         _play_click_sound()
         Loc.toggle()
+        if _lang_button:
+                _lang_button.text = Loc.t("menu.language")
 
 
 # ==================== ГАЧА ====================
@@ -2066,6 +2068,8 @@ func _rebuild_gacha_panel():
 
 var gallery_panel: Control
 var gallery_list: VBoxContainer
+var _gallery_filter: String = "all"  # all | mutants | artifacts | exclusive | owned
+var _gallery_filter_group: ButtonGroup
 
 
 func _build_profile_ui():
@@ -2093,7 +2097,8 @@ func _on_profile_pressed():
 
 
 func _build_gallery_ui():
-        """Кнопка ГАЛЕРЕЯ + панель коллекции: открытые цветные, закрытые серые"""
+        """Кнопка ГАЛЕРЕЯ + панель коллекции: фильтры (все/мутанты/арты/эксклюзивы/мои),
+        плитки от самых сильных к слабым"""
         var bottom: HBoxContainer = get_node_or_null("VBox/BottomButtons")
         if bottom:
                 var gal_btn := Button.new()
@@ -2136,9 +2141,28 @@ func _build_gallery_ui():
         title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
         panel.add_child(title)
 
+        var row := HBoxContainer.new()
+        row.name = "FilterRow"
+        row.position = Vector2(20, 38)
+        row.size = Vector2(520, 28)
+        row.add_theme_constant_override("separation", 4)
+        panel.add_child(row)
+
+        _gallery_filter_group = ButtonGroup.new()
+        for fdef in [["all", "gallery.f_all"], ["mutants", "gallery.f_mut"], ["artifacts", "gallery.f_art"], ["exclusive", "gallery.f_ex"], ["owned", "gallery.f_owned"]]:
+                var fb := Button.new()
+                fb.text = Loc.t(fdef[1])
+                fb.toggle_mode = true
+                fb.button_group = _gallery_filter_group
+                fb.button_pressed = fdef[0] == _gallery_filter
+                fb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+                BunkerUI.style_button(fb, "steel", 11)
+                fb.pressed.connect(_on_gallery_filter_pressed.bind(fdef[0]))
+                row.add_child(fb)
+
         var scroll := ScrollContainer.new()
-        scroll.position = Vector2(20, 44)
-        scroll.size = Vector2(520, 308)
+        scroll.position = Vector2(20, 74)
+        scroll.size = Vector2(520, 278)
         panel.add_child(scroll)
 
         gallery_list = VBoxContainer.new()
@@ -2165,6 +2189,69 @@ func _on_gallery_pressed():
 func _on_gallery_close_pressed():
         _play_click_sound()
         gallery_panel.visible = false
+
+
+func _on_gallery_filter_pressed(filter: String):
+        _play_click_sound()
+        _gallery_filter = filter
+        _rebuild_gallery_panel()
+
+
+## Сила мутанта: тир редкости, внутри тира - реже выпадает = сильнее.
+## Эксклюзив = сила базы + бонус за множители статов (hp*dmg).
+func _mutant_strength(type: String) -> float:
+        var ex := GachaData.get_exclusive(type)
+        if not ex.is_empty():
+                var bonus: float = float(ex.get("hp", 1.0)) * float(ex.get("dmg", 1.0)) - 1.0
+                return _mutant_strength(str(ex["base"])) + bonus * 25.0
+        var rank: float = {"common": 100.0, "uncommon": 200.0, "rare": 300.0, "legendary": 400.0}.get(GachaData.get_mutant_rarity(type), 100.0)
+        return rank - _mutant_drop_weight(type)
+
+
+func _mutant_drop_weight(type: String) -> float:
+        for rarity in GachaData.MUTANT_POOL:
+                for e in GachaData.MUTANT_POOL[rarity]:
+                        if str(e[0]) == type:
+                                return float(e[1])
+        return 0.0
+
+
+## Сила артефакта: тир редкости, внутри тира - уровень кампании открытия
+func _artifact_strength(type: String) -> float:
+        var rank: float = {"common": 1000.0, "rare": 2000.0, "legendary": 3000.0}.get(GachaData.get_artifact_rarity(type), 1000.0)
+        return rank + float(GachaData.get_unlock_campaign_level(type))
+
+
+func _gallery_all_mutant_types() -> Array:
+        var out: Array = []
+        for rarity in GachaData.MUTANT_POOL:
+                for e in GachaData.MUTANT_POOL[rarity]:
+                        out.append(str(e[0]))
+        for ex in GachaData.EXCLUSIVE_MUTANTS:
+                out.append(str(ex["type"]))
+        return out
+
+
+func _gallery_all_artifact_types() -> Array:
+        var out: Array = []
+        for rarity in GachaData.ARTIFACT_POOL:
+                for t in GachaData.ARTIFACT_POOL[rarity]:
+                        out.append(str(t))
+        for ax in GachaData.EXCLUSIVE_ANOMALIES:
+                out.append(str(ax["type"]))
+        return out
+
+
+func _gallery_owned_count() -> int:
+        var n := 0
+        for t in _gallery_all_mutant_types():
+                if lab_data.unlocked_mutants.has(t):
+                        n += 1
+        for t in _gallery_all_artifact_types():
+                if lab_data.won_artifacts.has(t) or lab_data.exclusive_anomalies.has(t):
+                        n += 1
+        return n
+
 
 
 func _gallery_tile(type: String, is_mutant: bool) -> Control:
@@ -2358,43 +2445,88 @@ func _anomaly_loc_key(anomaly_type: String) -> String:
 
 
 func _rebuild_gallery_panel():
-        """Все мутанты и арты: открытые цветные, закрытые серые силуэты"""
+        """Коллекция по активному фильтру, от самых сильных к слабым: счётчик + секции"""
         for child in gallery_list.get_children():
                 child.queue_free()
         if not lab_data:
                 return
 
-        gallery_list.add_child(_make_farm_section(Loc.t("lab.mutants")))
-        var mut_grid := GridContainer.new()
-        mut_grid.columns = 6
-        mut_grid.add_theme_constant_override("h_separation", 4)
-        mut_grid.add_theme_constant_override("v_separation", 4)
-        gallery_list.add_child(mut_grid)
-        for entry in GachaData.MUTANT_POOL.values():
-                for e in entry:
-                        mut_grid.add_child(_gallery_tile(str(e[0]), true))
+        var count := Label.new()
+        count.text = "%s %d/%d" % [Loc.t("gallery.count"), _gallery_owned_count(), GachaData.total_collection_size()]
+        count.add_theme_font_override("font", BunkerUI.font_title())
+        count.add_theme_font_size_override("font_size", 12)
+        count.add_theme_color_override("font_color", BunkerUI.HAZARD)
+        gallery_list.add_child(count)
 
-        gallery_list.add_child(_gallery_section(" "))
-        gallery_list.add_child(_gallery_section(Loc.t("shop.artifacts_header").split(" (")[0]))
-        var art_grid := GridContainer.new()
-        art_grid.columns = 6
-        art_grid.add_theme_constant_override("h_separation", 4)
-        art_grid.add_theme_constant_override("v_separation", 4)
-        gallery_list.add_child(art_grid)
-        for rarity in GachaData.ARTIFACT_POOL.values():
-                for type in rarity:
-                        art_grid.add_child(_gallery_tile(str(type), false))
+        var owned_only := _gallery_filter == "owned"
+        var filled := false
+        if _gallery_filter in ["all", "mutants", "owned"]:
+                filled = _gallery_fill_mutants(owned_only) or filled
+        if _gallery_filter in ["all", "artifacts", "owned"]:
+                filled = _gallery_fill_artifacts(owned_only) or filled
+        if _gallery_filter in ["all", "exclusive", "owned"]:
+                filled = _gallery_fill_exclusives(owned_only) or filled
+        if not filled:
+                gallery_list.add_child(_gallery_section(Loc.t("gallery.empty")))
 
-        gallery_list.add_child(_gallery_section("ЭКСКЛЮЗИВЫ ЧЁРНЫХ ЯЩИКОВ"))
-        var ex_grid := GridContainer.new()
-        ex_grid.columns = 3
-        ex_grid.add_theme_constant_override("h_separation", 4)
-        ex_grid.add_theme_constant_override("v_separation", 4)
-        gallery_list.add_child(ex_grid)
+
+func _gallery_make_grid(columns: int) -> GridContainer:
+        var grid := GridContainer.new()
+        grid.columns = columns
+        grid.add_theme_constant_override("h_separation", 4)
+        grid.add_theme_constant_override("v_separation", 4)
+        return grid
+
+
+func _gallery_fill_mutants(owned_only: bool) -> bool:
+        var types := _gallery_all_mutant_types()
+        types.sort_custom(func(a, b): return _mutant_strength(a) > _mutant_strength(b))
+        var grid: GridContainer = null
+        for t in types:
+                if owned_only and not lab_data.unlocked_mutants.has(t):
+                        continue
+                if grid == null:
+                        gallery_list.add_child(_make_farm_section(Loc.t("lab.mutants")))
+                        grid = _gallery_make_grid(6)
+                        gallery_list.add_child(grid)
+                grid.add_child(_gallery_tile(t, true))
+        return grid != null
+
+
+func _gallery_fill_artifacts(owned_only: bool) -> bool:
+        var types := _gallery_all_artifact_types()
+        types.sort_custom(func(a, b): return _artifact_strength(a) > _artifact_strength(b))
+        var grid: GridContainer = null
+        for t in types:
+                if owned_only and not (lab_data.won_artifacts.has(t) or lab_data.exclusive_anomalies.has(t)):
+                        continue
+                if grid == null:
+                        gallery_list.add_child(_make_farm_section(Loc.t("shop.artifacts_header").split(" (")[0]))
+                        grid = _gallery_make_grid(6)
+                        gallery_list.add_child(grid)
+                grid.add_child(_gallery_tile(t, false))
+        return grid != null
+
+
+func _gallery_fill_exclusives(owned_only: bool) -> bool:
+        var entries: Array = []
         for ex in GachaData.EXCLUSIVE_MUTANTS:
-                ex_grid.add_child(_gallery_ex_tile(str(ex["type"]), true))
+                entries.append({"t": str(ex["type"]), "mut": true, "s": float(ex.get("hp", 1.0)) * float(ex.get("dmg", 1.0))})
         for ax in GachaData.EXCLUSIVE_ANOMALIES:
-                ex_grid.add_child(_gallery_ex_tile(str(ax["type"]), false))
+                entries.append({"t": str(ax["type"]), "mut": false, "s": float(ax.get("dmg", 1.0)) * float(ax.get("rad", 1.0))})
+        entries.sort_custom(func(a, b): return float(a["s"]) > float(b["s"]))
+        var grid: GridContainer = null
+        for e in entries:
+                var t: String = e["t"]
+                var unlocked: bool = lab_data.unlocked_mutants.has(t) if bool(e["mut"]) else (lab_data.won_artifacts.has(t) or lab_data.exclusive_anomalies.has(t))
+                if owned_only and not unlocked:
+                        continue
+                if grid == null:
+                        gallery_list.add_child(_make_farm_section(Loc.t("gallery.ex_header")))
+                        grid = _gallery_make_grid(3)
+                        gallery_list.add_child(grid)
+                grid.add_child(_gallery_ex_tile(t, bool(e["mut"])))
+        return grid != null
 
 
 func _gallery_section(text: String) -> Label:

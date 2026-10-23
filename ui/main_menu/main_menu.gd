@@ -311,7 +311,7 @@ func _build_language_button():
                 return
         _lang_button = Button.new()
         _lang_button.text = Loc.t("menu.language")
-        _lang_button.position = Vector2(30, 240)
+        _lang_button.position = Vector2(30, 285)
         _lang_button.size = Vector2(340, 36)
         _lang_button.pressed.connect(_on_language_pressed)
         panel.add_child(_lang_button)
@@ -319,6 +319,8 @@ func _build_language_button():
 
 func _on_language_pressed():
         Loc.toggle()
+        if _lang_button:
+                _lang_button.text = Loc.t("menu.language")
 
 
 # ==================== СТИЛЬ БУНКЕР ====================
