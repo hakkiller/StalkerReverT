@@ -449,6 +449,7 @@ const STRINGS := {
         "tw.head": {"ru": "ЗАДАЧИ ЗОНЫ", "en": "ZONE TASKS"},
         "tw.today": {"ru": "Дневные", "en": "Daily"},
         "tw.week": {"ru": "Недельные закрыто: {done} / {total}", "en": "Weekly done: {done} / {total}"},
+        "tw.weekly": {"ru": "Недельные", "en": "Weekly"},
         "tw.track_ready": {"ru": "Сундуки готовы: {n} — открыть трек", "en": "Chests ready: {n} - open track"},
         "tw.track_next": {"ru": "До сундука {n}: {pts} / {need} очков", "en": "To chest {n}: {pts} / {need} points"},
         "tw.claim": {"ru": "ЗАБРАТЬ", "en": "CLAIM"},

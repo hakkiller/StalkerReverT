@@ -154,13 +154,19 @@ func _fill_shop(items: Array) -> void:
 		var iv := VBoxContainer.new()
 		iv.add_theme_constant_override("separation", 5)
 		iv.custom_minimum_size = Vector2(462, 0)
-		var name_l := _make_label(str(item.get("name_ru", "") if ru else item.get("name_en", "")), 25, COL_GOLD, true)
+		var nm: String = str(item.get("name", ""))
+		if nm.is_empty():
+			nm = str(item.get("name_ru", "") if ru else item.get("name_en", ""))
+		var name_l := _make_label(nm, 25, COL_GOLD, true)
 		name_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		iv.add_child(name_l)
 		var cost_l := _make_label("%d" % cost, 21, COL_SAFE, true)
 		cost_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		iv.add_child(cost_l)
-		var desc_l := _make_label(str(item.get("desc_ru", "") if ru else item.get("desc_en", "")), 17, COL_TEXT)
+		var ds: String = str(item.get("desc", ""))
+		if ds.is_empty():
+			ds = str(item.get("desc_ru", "") if ru else item.get("desc_en", ""))
+		var desc_l := _make_label(ds, 17, COL_TEXT)
 		desc_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		desc_l.custom_minimum_size = Vector2(0, 62)
 		iv.add_child(desc_l)

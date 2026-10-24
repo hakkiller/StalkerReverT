@@ -1769,6 +1769,17 @@ func _style_fat_scrollbar(bar: ScrollBar, horizontal: bool) -> void:
         bar.add_theme_stylebox_override("grabber_pressed", grabh)
 
 
+## Невидимый скроллбар (v0.29.1): Godot 4 рисует полосы ScrollContainer ПОВЕРХ
+## контента, поэтому у краёв полоса перекрывала подписи. Прокрутка остаётся,
+## полоса становится нулевой ширины и прозрачной.
+func _hide_scrollbar(bar: ScrollBar) -> void:
+        if bar == null:
+                return
+        bar.custom_minimum_size = Vector2(0, 0)
+        bar.modulate = Color(1, 1, 1, 0)
+        bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+
 ## Одна строка «ключ — значение» алтаря
 func _make_altar_kv(k: String, v: String, vcol: Color = BunkerUI.TEXT_LIGHT) -> HBoxContainer:
         var row := HBoxContainer.new()
@@ -4744,11 +4755,11 @@ func _build_tasks_ui():
         track_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
         _tasks_track_scroll = track_scroll
         # Свайп-слой: лента тянется пальцем, плитки-кнопки больше не съедают тач
-        var track_wrap := _make_swipe_overlay(track_scroll, true, 24.0, 0.0)
+        var track_wrap := _make_swipe_overlay(track_scroll, true, 0.0, 0.0)
         track_wrap.custom_minimum_size = Vector2(0, 200)
         track_wrap.size_flags_vertical = Control.SIZE_FILL
         root.add_child(track_wrap)
-        _style_fat_scrollbar(track_scroll.get_h_scroll_bar(), true)
+        _hide_scrollbar(track_scroll.get_h_scroll_bar())
 
         _tasks_track_row = HBoxContainer.new()
         _tasks_track_row.add_theme_constant_override("separation", 10)
@@ -5094,8 +5105,8 @@ func _on_prog_level_up(lvl: int):
 
 
 # ==================== ВИДЖЕТ ЗАДАЧ (главный экран) + КАЛЕНДАРЬ ВХОДА ====================
-## Язычок у правого края + выдвижная панель: две дневные задачи, сводка недели,
-## трек сундуков и календарь входа. Пульсирует, когда есть что забрать.
+## Язычок у правого края + выдвижная панель: ВСЕ дневные и недельные задачи
+## (v0.29.1), трек сундуков и календарь входа. Пульсирует, когда есть что забрать.
 
 var _tw_root: Control = null
 var _tw_tab: Button = null
@@ -5104,7 +5115,6 @@ var _tw_panel: Panel = null
 var _tw_today_head: Label = null
 var _tw_rows_box: VBoxContainer = null
 var _tw_rows: Array = []
-var _tw_week_label: Label = null
 var _tw_track_btn: Button = null
 var _tw_open := false
 var _tw_anim: Tween = null
@@ -5213,22 +5223,18 @@ func _build_tasks_widget():
         close.pressed.connect(func(): _tw_set_open(false))
         head.add_child(close)
 
-        var sec := BunkerUI.make_mono_label(Loc.t("tw.today"), 12, BunkerUI.TEXT_FAINT)
-        v.add_child(sec)
-
+        var rows_scroll := ScrollContainer.new()
+        rows_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+        rows_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+        rows_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_ALWAYS
+        var rows_wrap := _make_swipe_overlay(rows_scroll, false, 0.0, 0.0)
+        v.add_child(rows_wrap)
+        _hide_scrollbar(rows_scroll.get_v_scroll_bar())
         _tw_rows_box = VBoxContainer.new()
-        _tw_rows_box.add_theme_constant_override("separation", 8)
-        v.add_child(_tw_rows_box)
-        for i in range(2):
-                _tw_rows.append(_tw_make_task_row())
+        _tw_rows_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        _tw_rows_box.add_theme_constant_override("separation", 6)
+        rows_scroll.add_child(_tw_rows_box)
 
-        _tw_week_label = BunkerUI.make_mono_label("", 12, BunkerUI.TEXT_DIM)
-        _tw_week_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-        v.add_child(_tw_week_label)
-
-        var spacer := Control.new()
-        spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
-        v.add_child(spacer)
 
         var line := ColorRect.new()
         line.custom_minimum_size = Vector2(0, 1)
@@ -5255,7 +5261,7 @@ func _build_tasks_widget():
         v.add_child(cal_btn)
 
 
-func _tw_make_task_row() -> Dictionary:
+func _tw_make_task_row(kind: String) -> Dictionary:
         var p := PanelContainer.new()
         var sb := StyleBoxFlat.new()
         sb.bg_color = Color(0.07, 0.10, 0.055, 0.9)
@@ -5300,66 +5306,30 @@ func _tw_make_task_row() -> Dictionary:
         BunkerUI.style_button(claim, "primary", 13)
         claim.visible = false
         h.add_child(claim)
-        var refs := {"panel": p, "title": title, "bar": bar, "rew": rew, "claim": claim, "id": ""}
+        var refs := {"panel": p, "title": title, "bar": bar, "rew": rew, "claim": claim, "id": "", "kind": kind}
         claim.pressed.connect(func(): _tw_claim_row(refs))
         return refs
 
 
 func _tw_claim_row(refs: Dictionary) -> void:
         _play_click_sound()
-        Prog.claim_task("d", str(refs["id"]))
+        Prog.claim_task(str(refs.get("kind", "d")), str(refs["id"]))
 
 
-## Свежие 2 дневные задачи: сначала «готово к забору», затем по заполненности
+## Счётчики и точка-уведомление считаются всегда (tasks_changed стреляет на
+## каждом убийстве), полная перестройка строк — только при открытой панели.
 func _tw_refresh(_x = null) -> void:
         if _tw_root == null or lab_data == null:
                 return
-        var dt: Array = Prog.daily_tasks()
-        var arr: Array = dt.duplicate()
-        arr.sort_custom(func(a, b):
-                var ca: bool = bool(a["done"]) and not bool(a["claimed"])
-                var cb: bool = bool(b["done"]) and not bool(b["claimed"])
-                if ca != cb:
-                        return ca
-                var ra: float = float(a["prog"]) / float(maxi(1, int(a["def"]["need"])))
-                var rb: float = float(b["prog"]) / float(maxi(1, int(b["def"]["need"])))
-                return ra > rb)
-        var claimed_n := 0
         var claimable := false
+        var claimed_n := 0
+        var dt: Array = Prog.daily_tasks()
         for t in dt:
                 if bool(t["claimed"]):
                         claimed_n += 1
                 elif bool(t["done"]):
                         claimable = true
         _tw_today_head.text = "%d/%d" % [claimed_n, dt.size()]
-        for i in range(_tw_rows.size()):
-                var r: Dictionary = _tw_rows[i]
-                if i >= arr.size():
-                        (r["panel"] as Control).visible = false
-                        continue
-                (r["panel"] as Control).visible = true
-                var t: Dictionary = arr[i]
-                r["id"] = str(t["def"]["id"])
-                var done: bool = bool(t["done"])
-                var claimed: bool = bool(t["claimed"])
-                (r["title"] as Label).text = str(t["def"]["title"])
-                (r["title"] as Label).add_theme_color_override("font_color",
-                        BunkerUI.TEXT_FAINT if claimed else BunkerUI.TEXT_LIGHT)
-                (r["rew"] as Label).text = Loc.t("tw.reward", {"xp": int(t["def"]["xp"]), "pts": int(t["def"]["pts"])})
-                var bar: ProgressBar = r["bar"]
-                bar.max_value = maxi(1, int(t["def"]["need"]))
-                var target := float(mini(int(t["prog"]), int(t["def"]["need"])))
-                if done:
-                        target = float(int(t["def"]["need"]))
-                var tw := create_tween()
-                tw.tween_property(bar, "value", target, 0.45).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-                (r["claim"] as Button).visible = done and not claimed
-        var wt: Array = Prog.weekly_tasks()
-        var wdone := 0
-        for t in wt:
-                if bool(t["claimed"]):
-                        wdone += 1
-        _tw_week_label.text = Loc.t("tw.week", {"done": wdone, "total": wt.size()})
         var ready := 0
         var next_tier := 0
         for i in range(1, Prog.TRACK_TIERS + 1):
@@ -5376,6 +5346,65 @@ func _tw_refresh(_x = null) -> void:
                 _tw_track_btn.text = Loc.t("tw.track_next", {"n": next_tier, "pts": Prog.track_points(), "need": next_tier * Prog.TIER_COST})
                 _tw_track_btn.add_theme_color_override("font_color", BunkerUI.TEXT_LIGHT)
         _tw_dot.visible = claimable or ready > 0 or bool(Prog.calendar_info()["available"])
+        if not _tw_open:
+                return
+        _tw_rebuild_rows()
+
+
+## Полный список: все дневные и недельные задачи, готовые к забору сверху
+func _tw_rebuild_rows() -> void:
+        for c in _tw_rows_box.get_children():
+                _tw_rows_box.remove_child(c)
+                c.queue_free()
+        _tw_rows.clear()
+        var dt: Array = Prog.daily_tasks()
+        var wt: Array = Prog.weekly_tasks()
+        _tw_add_section(Loc.t("tw.today"))
+        _tw_fill_section(dt, "d")
+        var wdone := 0
+        for t in wt:
+                if bool(t["claimed"]):
+                        wdone += 1
+        _tw_add_section("%s · %d/%d" % [Loc.t("tw.weekly"), wdone, wt.size()])
+        _tw_fill_section(wt, "w")
+
+
+func _tw_add_section(text: String) -> void:
+        _tw_rows_box.add_child(BunkerUI.make_mono_label(text, 12, BunkerUI.TEXT_FAINT))
+
+
+## Сортировка секции: «готово к забору», затем по заполненности, закрытые внизу
+func _tw_fill_section(arr: Array, kind: String) -> void:
+        var sorted: Array = arr.duplicate()
+        sorted.sort_custom(func(a, b):
+                var ca: bool = bool(a["done"]) and not bool(a["claimed"])
+                var cb: bool = bool(b["done"]) and not bool(b["claimed"])
+                if ca != cb:
+                        return ca
+                if bool(a["claimed"]) != bool(b["claimed"]):
+                        return not bool(a["claimed"])
+                var ra: float = float(a["prog"]) / float(maxi(1, int(a["def"]["need"])))
+                var rb: float = float(b["prog"]) / float(maxi(1, int(b["def"]["need"])))
+                return ra > rb)
+        for t in sorted:
+                var r := _tw_make_task_row(kind)
+                _tw_rows.append(r)
+                var done: bool = bool(t["done"])
+                var claimed: bool = bool(t["claimed"])
+                r["id"] = str(t["def"]["id"])
+                var title: Label = r["title"]
+                title.text = str(t["def"]["title"])
+                title.add_theme_color_override("font_color",
+                        BunkerUI.TEXT_FAINT if claimed else BunkerUI.TEXT_LIGHT)
+                (r["rew"] as Label).text = Loc.t("tw.reward", {"xp": int(t["def"]["xp"]), "pts": int(t["def"]["pts"])})
+                var bar: ProgressBar = r["bar"]
+                bar.max_value = maxi(1, int(t["def"]["need"]))
+                var target := float(mini(int(t["prog"]), int(t["def"]["need"])))
+                if done:
+                        target = float(int(t["def"]["need"]))
+                var tw := create_tween()
+                tw.tween_property(bar, "value", target, 0.45).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+                (r["claim"] as Button).visible = done and not claimed
 
 
 func _tw_set_open(v: bool) -> void:
