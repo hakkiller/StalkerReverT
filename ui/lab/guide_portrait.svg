@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="440" viewBox="0 0 320 440">
+  <!-- Проводник: тёмный силуэт в капюшоне, светящиеся глаза. Только базовые
+       фигуры и градиенты (ThorVG): без фильтров, без text, без animate. -->
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="42%" r="55%">
+      <stop offset="0%" stop-color="#1d3a20" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#0b120a" stop-opacity="0.0"/>
+    </radialGradient>
+    <linearGradient id="cloak" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#233425"/>
+      <stop offset="60%" stop-color="#16241a"/>
+      <stop offset="100%" stop-color="#0d150e"/>
+    </linearGradient>
+    <linearGradient id="hood" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2c4030"/>
+      <stop offset="70%" stop-color="#1a2a1d"/>
+      <stop offset="100%" stop-color="#111c13"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="0" width="320" height="440" fill="#0b120a"/>
+  <rect x="3" y="3" width="314" height="434" fill="none" stroke="#2e5c34" stroke-width="3"/>
+  <rect x="10" y="10" width="300" height="420" fill="url(#glow)"/>
+
+  <!-- плащи -->
+  <path d="M38,440 C46,340 100,300 160,300 C220,300 274,340 282,440 Z" fill="url(#cloak)"/>
+  <path d="M118,312 C136,300 184,300 202,312 L188,352 C176,342 144,342 132,352 Z" fill="#0d150e"/>
+
+  <!-- капюшон -->
+  <path d="M160,40 C218,40 252,88 248,150 C245,198 228,240 196,262 L124,262 C92,240 75,198 72,150 C68,88 102,40 160,40 Z" fill="url(#hood)"/>
+  <path d="M160,64 C202,64 228,100 226,152 C224,194 208,224 160,236 C112,224 96,194 94,152 C92,100 118,64 160,64 Z" fill="#07100a"/>
+  <path d="M160,40 C218,40 252,88 248,150 C247,166 245,182 241,197 C246,140 214,58 160,54 C106,58 74,140 79,197 C75,182 73,166 72,150 C68,88 102,40 160,40 Z" fill="#0f1a11"/>
+
+  <!-- глаза -->
+  <ellipse cx="136" cy="156" rx="13" ry="7" fill="#3dff7c" opacity="0.25"/>
+  <ellipse cx="184" cy="156" rx="13" ry="7" fill="#3dff7c" opacity="0.25"/>
+  <ellipse cx="136" cy="156" rx="8" ry="4" fill="#a8ffbf"/>
+  <ellipse cx="184" cy="156" rx="8" ry="4" fill="#a8ffbf"/>
+
+  <!-- линии рёбер капюшона -->
+  <path d="M104,110 C116,80 138,64 160,62" fill="none" stroke="#33502f" stroke-width="3" opacity="0.7"/>
+  <path d="M216,110 C204,80 182,64 160,62" fill="none" stroke="#33502f" stroke-width="3" opacity="0.7"/>
+
+  <!-- сканлайны -->
+  <rect x="10" y="150" width="300" height="2" fill="#2e5c34" opacity="0.18"/>
+  <rect x="10" y="220" width="300" height="2" fill="#2e5c34" opacity="0.14"/>
+  <rect x="10" y="300" width="300" height="2" fill="#2e5c34" opacity="0.12"/>
+  <rect x="10" y="380" width="300" height="2" fill="#2e5c34" opacity="0.10"/>
+</svg>

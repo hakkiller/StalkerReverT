@@ -72,6 +72,7 @@ var _difficulty: float = 1.0
 # Кампания: весовой состав рангов [новички, ветераны, мастера] в процентах.
 # Пустой словарь = старое поведение (пороги по _difficulty)
 var rank_weights: Dictionary = {}
+var elite_share: float = 0.0
 # Кампания: множители статов спавнящихся сталкеров
 var campaign_hp_mult: float = 1.0
 var campaign_damage_mult: float = 1.0
@@ -268,6 +269,10 @@ func _spawn_stalker() -> bool:
 	if campaign_hp_mult != 1.0 or campaign_damage_mult != 1.0 or campaign_speed_mult != 1.0:
 		if stalker.has_method("apply_campaign_scaling"):
 			stalker.apply_campaign_scaling(campaign_hp_mult, campaign_damage_mult, campaign_speed_mult)
+
+	# Элита Стражей (25/50/75/100): часть отряда получает метку и бафф
+	if elite_share > 0.0 and randf() < elite_share and stalker.has_method("promote_elite"):
+		stalker.promote_elite()
 
 	var monolith = _get_monolith()
 	if monolith:
@@ -578,6 +583,11 @@ func set_rank_weights(mix: Array):
 		"master": float(mix[2])
 	}
 	# print("Состав рангов: н/в/м = %d/%d/%d%%" % [int(mix[0]), int(mix[1]), int(mix[2])])
+
+
+## Доля элиты в волнах (Стражи башни 25/50/75/100): 0.25 = четверть отряда
+func set_elite_share(pct: float):
+	elite_share = clampf(pct, 0.0, 1.0)
 
 
 ## Множители статов врагов для текущего уровня кампании

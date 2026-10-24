@@ -94,6 +94,33 @@ const KEEPER_STAT_MULT: float = 1.15
 const KEEPER_COUNT_PCT: float = 0.15
 const STAR_ROLL_BONUS: int = 1            # +1 крутка за звезду сверх первой
 
+# ==================== СТРАЖИ (25/50/75/100) ====================
+# Именные боссы четвертей башни ПОВЕРХ обычных Прорывов/Хранителей.
+# stat_extra - прибавка к множителю статов этажа; count_pct - прибавка к числу
+# сталкеров; elite_pct - доля ЭЛИТЫ в волнах (мастера x2.4 HP, метка «ЭЛИТА»).
+# Награда Стража: биомасса умножается на WARDEN_REWARD_MULT (поверх Прорыва/
+# Хранителя) и +2 аномальные крутки. Условия звёзд не меняются.
+const WARDENS := {
+	25: {
+		"name": "Ткач ржавых троп", "desc": "Четверть пути. Волну ведут те, кто выжил в первых ярусах.",
+		"stat_extra": 1.10, "count_pct": 0.10, "elite_pct": 0.25,
+	},
+	50: {
+		"name": "Хозяин полуденной тени", "desc": "Экватор. Страж собирает лучших: каждый третий - элита.",
+		"stat_extra": 1.12, "count_pct": 0.12, "elite_pct": 0.35,
+	},
+	75: {
+		"name": "Диктор Рубежа", "desc": "Рубеж поёт свою песню. Диктор считает всех, кто вошёл и не вышел.",
+		"stat_extra": 1.15, "count_pct": 0.15, "elite_pct": 0.45,
+	},
+	100: {
+		"name": "Голос Монолита", "desc": "Последний этаж. Здесь говорит сам Монолит - голосом своих слуг.",
+		"stat_extra": 1.18, "count_pct": 0.20, "elite_pct": 0.55,
+	},
+}
+const WARDEN_REWARD_MULT: float = 2.0
+const WARDEN_ANOMALY_ROLLS: int = 2
+
 
 static func get_tier(floor_num: int) -> Dictionary:
 	var f: int = clampi(floor_num, 1, TOTAL_FLOORS)
@@ -103,6 +130,12 @@ static func get_tier(floor_num: int) -> Dictionary:
 
 
 ## Тип этажа: "keeper" (каждый 10-й), "break" (каждый 5-й), "normal"
+## Страж четверти башни (25/50/75/100) - именной босс поверх Прорывов/Хранителей
+static func get_warden(floor_num: int) -> Variant:
+	var f: int = clampi(floor_num, 1, TOTAL_FLOORS)
+	return WARDENS.get(f)
+
+
 static func get_floor_type(floor_num: int) -> String:
 	var f: int = clampi(floor_num, 1, TOTAL_FLOORS)
 	if f % 10 == 0:
@@ -152,6 +185,9 @@ static func get_floor_rewards(floor_num: int) -> Dictionary:
 		"keeper": mult = KEEPER_REWARD_MULT
 		"break": mult = BREAK_REWARD_MULT
 
+	if WARDENS.has(f):
+		mult *= WARDEN_REWARD_MULT
+
 	var biomass: float = (REWARD_BASE + REWARD_PER_FLOOR * f) * mult
 	var mutant_rolls := roundi((ROLLS_BASE + float(f) / 20.0) * mult)
 	# Аномалийные крутки: на Прорывах и Хранителях щедрее
@@ -160,6 +196,8 @@ static func get_floor_rewards(floor_num: int) -> Dictionary:
 		"keeper": anomaly_rolls = 3
 		"break": anomaly_rolls = 2
 		_: anomaly_rolls = 1 if f % 3 == 0 else 0
+	if WARDENS.has(f):
+		anomaly_rolls += WARDEN_ANOMALY_ROLLS
 	return {"biomass": biomass, "mutant_rolls": mutant_rolls, "anomaly_rolls": anomaly_rolls}
 
 
@@ -185,13 +223,24 @@ static func get_floor_params(floor_num: int) -> Dictionary:
 			title = "ПРОРЫВ: %d-й этаж" % f
 			stat *= BREAK_STAT_MULT
 
+	# Страж четверти: имя поверх типа этажа, свои статы/численность
+	var warden = get_warden(f)
+	var warden_name := ""
+	if warden != null:
+		warden_name = str(warden["name"])
+		title = "СТРАЖ: %s" % warden_name
+		stat *= float(warden["stat_extra"])
+		count = roundi(count * (1.0 + float(warden["count_pct"])))
+
 	return {
 		"level": f,
 		"chapter_title": String(tier["name"]),
 		"chapter_desc": "",
 		"title": title,
-		"desc": "",
-		"is_boss": type == "keeper",
+		"desc": str(warden["desc"]) if warden_name != "" else "",
+		"is_boss": type == "keeper" or warden_name != "",
+		"warden": warden_name,
+		"elite_pct": float(warden["elite_pct"]) if warden_name != "" else 0.0,
 		"waves": waves,
 		"count_min": count,
 		"count_max": count + 2,

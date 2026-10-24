@@ -550,23 +550,26 @@ func _on_campaign_mode_pressed():
 
 func _on_start_run_pressed():
         _play_click_sound()
+        # v0.27.0: перед выходом - брифинг Проводника; запуск из поп-апа
+        _briefing_open()
+
+
+func _briefing_launch():
         run_started.emit()
-        
+
         if not game_manager:
                 game_manager = get_tree().get_first_node_in_group("game_manager")
-        
+
         if game_manager:
                 # Выбранный в селекторе уровень кампании уходит в параметры забега
                 game_manager.selected_campaign_level = _campaign_level
                 # Башня: выбранный этаж уходит в параметры забега
                 if game_manager.get_selected_run_mode() == "tower":
                         game_manager.set_selected_tower_floor(_tower_floor)
-                # print("Запуск забега через GameManager (уровень кампании %d)" % _campaign_level)
                 await get_tree().create_timer(0.2).timeout
                 game_manager.change_scene("run")
         else:
                 pass
-                # print("GameManager не найден, не могу начать забег")
 
 
 func _on_menu_pressed():
@@ -2682,6 +2685,9 @@ func _rebuild_gallery_panel():
         count.add_theme_font_size_override("font_size", 12)
         count.add_theme_color_override("font_color", BunkerUI.HAZARD)
         gallery_list.add_child(count)
+
+        # Сеты артефактов (v0.27.0): 5 элементов, стадии 2/3
+        _gallery_sets_block()
 
         var owned_only := _gallery_filter == "owned"
         var filled := false
@@ -5649,3 +5655,300 @@ func _maybe_calendar_popup() -> void:
         if Prog.calendar_popup_needed():
                 Prog.calendar_popup_mark()
                 _cal_open()
+
+
+# ==================== БРИФИНГ ПРОВОДНИКА (v0.27.0 «ГОЛОС ЗОНЫ») ====================
+# Поп-ап перед забегом: портрет, речь печатной машинкой, чипы цели/награды.
+# Запуск забега переехал в _briefing_launch().
+
+var _brf_root: Control = null
+var _brf_text: Label = null
+var _brf_place: Label = null
+var _brf_header: Label = null
+var _brf_chips_box: HBoxContainer = null
+var _brf_tween: Tween = null
+var _brf_hot := false
+
+var _sets_info_label: Label = null
+
+
+func _briefing_build():
+        if _brf_root != null:
+                return
+        _brf_root = Control.new()
+        _brf_root.name = "BriefingPopup"
+        _brf_root.set_anchors_preset(Control.PRESET_FULL_RECT)
+        _brf_root.mouse_filter = Control.MOUSE_FILTER_STOP
+        _brf_root.visible = false
+        add_child(_brf_root)
+
+        var dim := ColorRect.new()
+        dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+        dim.color = Color(0, 0, 0, 0.78)
+        dim.mouse_filter = Control.MOUSE_FILTER_STOP
+        dim.gui_input.connect(func(ev: InputEvent):
+                if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
+                        _briefing_close())
+        _brf_root.add_child(dim)
+
+        var panel := Panel.new()
+        panel.anchor_left = 0.5
+        panel.anchor_right = 0.5
+        panel.anchor_top = 0.5
+        panel.anchor_bottom = 0.5
+        panel.offset_left = -460.0
+        panel.offset_right = 460.0
+        panel.offset_top = -262.0
+        panel.offset_bottom = 262.0
+        var sb := StyleBoxFlat.new()
+        sb.bg_color = Color(0.031, 0.045, 0.026, 0.995)
+        sb.border_color = BunkerUI.GREEN
+        sb.set_border_width_all(2)
+        sb.set_corner_radius_all(12)
+        sb.shadow_color = Color(0, 0, 0, 0.55)
+        sb.shadow_size = 22
+        panel.add_theme_stylebox_override("panel", sb)
+        _brf_root.add_child(panel)
+
+        var marg := MarginContainer.new()
+        marg.set_anchors_preset(Control.PRESET_FULL_RECT)
+        marg.add_theme_constant_override("margin_left", 20)
+        marg.add_theme_constant_override("margin_right", 20)
+        marg.add_theme_constant_override("margin_top", 14)
+        marg.add_theme_constant_override("margin_bottom", 16)
+        panel.add_child(marg)
+        var v := VBoxContainer.new()
+        v.add_theme_constant_override("separation", 10)
+        marg.add_child(v)
+
+        var head := HBoxContainer.new()
+        head.add_theme_constant_override("separation", 12)
+        v.add_child(head)
+        _brf_header = Label.new()
+        _brf_header.text = Loc.t("brf.title")
+        _brf_header.add_theme_font_override("font", BunkerUI.font_title())
+        _brf_header.add_theme_font_size_override("font_size", 26)
+        _brf_header.add_theme_color_override("font_color", BunkerUI.GREEN)
+        head.add_child(_brf_header)
+        var hsp := Control.new()
+        hsp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        head.add_child(hsp)
+        _brf_place = BunkerUI.make_mono_label("", 13, BunkerUI.TEXT_DIM)
+        head.add_child(_brf_place)
+
+        var line := ColorRect.new()
+        line.custom_minimum_size = Vector2(0, 1)
+        line.color = BunkerUI.STEEL_EDGE
+        v.add_child(line)
+
+        var body := HBoxContainer.new()
+        body.add_theme_constant_override("separation", 16)
+        body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+        v.add_child(body)
+
+        var portrait := TextureRect.new()
+        portrait.texture = load("res://ui/lab/guide_portrait.svg")
+        portrait.custom_minimum_size = Vector2(180, 0)
+        portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+        portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+        body.add_child(portrait)
+
+        var right := VBoxContainer.new()
+        right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        right.add_theme_constant_override("separation", 10)
+        body.add_child(right)
+
+        _brf_text = Label.new()
+        _brf_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+        _brf_text.add_theme_font_override("font", BunkerUI.font_body())
+        _brf_text.add_theme_font_size_override("font_size", 17)
+        _brf_text.add_theme_color_override("font_color", BunkerUI.TEXT)
+        _brf_text.size_flags_vertical = Control.SIZE_EXPAND_FILL
+        _brf_text.mouse_filter = Control.MOUSE_FILTER_STOP
+        _brf_text.gui_input.connect(func(ev: InputEvent):
+                if ev is InputEventMouseButton and ev.pressed:
+                        _brf_skip_typing())
+        right.add_child(_brf_text)
+
+        _brf_chips_box = HBoxContainer.new()
+        _brf_chips_box.add_theme_constant_override("separation", 8)
+        right.add_child(_brf_chips_box)
+
+        var hint := BunkerUI.make_mono_label(Loc.t("brf.hint"), 11, BunkerUI.TEXT_FAINT)
+        right.add_child(hint)
+
+        var btns := HBoxContainer.new()
+        btns.add_theme_constant_override("separation", 14)
+        btns.alignment = BoxContainer.ALIGNMENT_END
+        v.add_child(btns)
+        var cancel := Button.new()
+        cancel.text = Loc.t("brf.cancel")
+        cancel.custom_minimum_size = Vector2(200, 56)
+        BunkerUI.style_button(cancel, "steel", 16)
+        cancel.pressed.connect(func():
+                _play_click_sound()
+                _briefing_close())
+        cancel.mouse_entered.connect(_play_hover_sound)
+        btns.add_child(cancel)
+        var go := Button.new()
+        go.text = Loc.t("brf.go")
+        go.custom_minimum_size = Vector2(320, 56)
+        BunkerUI.style_button(go, "primary", 17)
+        go.pressed.connect(func():
+                _play_click_sound()
+                _briefing_close()
+                _briefing_launch())
+        go.mouse_entered.connect(_play_hover_sound)
+        btns.add_child(go)
+
+
+func _briefing_open():
+        if _brf_root == null:
+                _briefing_build()
+        if game_manager == null:
+                game_manager = get_tree().get_first_node_in_group("game_manager")
+        if game_manager == null:
+                _briefing_launch()
+                return
+        # Башня: выбор этажа лабы уходит в менеджер до брифинга (как при запуске)
+        if game_manager.get_selected_run_mode() == "tower":
+                game_manager.set_selected_tower_floor(_tower_floor)
+        var info: Dictionary = BriefingData.for_current_selection(game_manager)
+        _brf_hot = bool(info.get("hot", false))
+        var place: Dictionary = info.get("place", {})
+        var kind: String = str(place.get("kind", "survival"))
+        if kind == "tower":
+                _brf_place.text = "%s %d/100 · %s" % [Loc.t("brf.place.tower"), int(place.get("level", 1)), str(place.get("title", ""))]
+        elif kind == "survival":
+                _brf_place.text = Loc.t("brf.place.survival")
+        else:
+                _brf_place.text = "%s %d/100 · %s" % [Loc.t("brf.place." + kind), int(place.get("level", 1)), str(place.get("title", ""))]
+        _brf_header.add_theme_color_override("font_color", BunkerUI.HAZARD_BRIGHT if _brf_hot else BunkerUI.GREEN)
+        var lines: Array = []
+        for k in info.get("keys", []):
+                lines.append(Loc.t(str(k)))
+        _brf_text.text = "\n\n".join(lines)
+        _build_briefing_chips()
+        _brf_root.visible = true
+        _brf_root.modulate = Color(1, 1, 1, 0)
+        var tw := create_tween()
+        tw.tween_property(_brf_root, "modulate:a", 1.0, 0.18)
+        _brf_start_typing()
+
+
+func _briefing_close():
+        if _brf_root == null or not _brf_root.visible:
+                return
+        _brf_skip_typing()
+        _brf_root.visible = false
+
+
+func _brf_start_typing():
+        if _brf_tween != null and _brf_tween.is_valid():
+                _brf_tween.kill()
+        _brf_text.visible_ratio = 0.0
+        var n: int = _brf_text.text.length()
+        var dur: float = clampf(float(n) / 70.0, 0.7, 2.6)
+        _brf_tween = create_tween()
+        _brf_tween.tween_property(_brf_text, "visible_ratio", 1.0, dur)
+
+
+func _brf_skip_typing():
+        if _brf_tween != null and _brf_tween.is_valid():
+                _brf_tween.kill()
+        _brf_text.visible_ratio = 1.0
+
+
+func _build_briefing_chips():
+        for c in _brf_chips_box.get_children():
+                c.queue_free()
+        var chips: Array = []
+        var mode: String = game_manager.get_selected_run_mode()
+        if mode == "tower":
+                var p: Dictionary = TowerData.get_floor_params(_tower_floor)
+                var r: Dictionary = TowerData.get_floor_rewards(_tower_floor)
+                chips.append([Loc.t("brf.chip.waves", {"n": int(p["waves"])}), BunkerUI.TEXT_DIM])
+                chips.append([Loc.t("brf.chip.pulses", {"n": int(p["pulses_to_win"])}), BunkerUI.TEXT_DIM])
+                chips.append([Loc.t("brf.chip.biomass", {"n": int(r["biomass"])}), BunkerUI.GREEN])
+                var warden = TowerData.get_warden(_tower_floor)
+                if warden != null:
+                        chips.append([Loc.t("brf.chip.warden"), BunkerUI.HAZARD_BRIGHT])
+                        chips.append([Loc.t("brf.chip.elite", {"n": int(round(float(warden["elite_pct"]) * 100.0))}), BunkerUI.HAZARD_BRIGHT])
+                else:
+                        match str(p.get("floor_type", "normal")):
+                                "keeper":
+                                        chips.append([Loc.t("brf.chip.keeper"), BunkerUI.HAZARD])
+                                "break":
+                                        chips.append([Loc.t("brf.chip.break"), BunkerUI.HAZARD])
+        elif mode == "survival":
+                chips.append([Loc.t("brf.chip.endless"), BunkerUI.TEXT_DIM])
+                var rec := 0
+                if game_manager.current_save_data and game_manager.current_save_data.statistics:
+                        rec = int(game_manager.current_save_data.statistics.best_survival_wave)
+                chips.append([Loc.t("brf.chip.record", {"n": rec}), BunkerUI.GREEN])
+        else:
+                var lvl: int = game_manager.get_selected_or_frontier_level()
+                var p: Dictionary = CampaignData.get_level_params(lvl, game_manager.get_campaign_mode())
+                chips.append([Loc.t("brf.chip.waves", {"n": int(p["waves"])}), BunkerUI.TEXT_DIM])
+                chips.append([Loc.t("brf.chip.pulses", {"n": int(p["pulses_to_win"])}), BunkerUI.TEXT_DIM])
+                chips.append([Loc.t("brf.chip.biomass", {"n": int(p["reward_bonus"])}), BunkerUI.GREEN])
+                if bool(p.get("is_boss", false)):
+                        chips.append([Loc.t("brf.chip.boss"), BunkerUI.HAZARD_BRIGHT])
+        for c in chips:
+                _brf_chips_box.add_child(_brf_chip(str(c[0]), c[1]))
+
+
+func _brf_chip(txt: String, col: Color) -> Control:
+        var p := Panel.new()
+        var sb := StyleBoxFlat.new()
+        sb.bg_color = Color(0.05, 0.08, 0.045, 0.95)
+        sb.border_color = col
+        sb.set_border_width_all(1)
+        sb.set_corner_radius_all(7)
+        sb.content_margin_left = 10.0
+        sb.content_margin_right = 10.0
+        sb.content_margin_top = 5.0
+        sb.content_margin_bottom = 5.0
+        p.add_theme_stylebox_override("panel", sb)
+        p.add_child(BunkerUI.make_mono_label(txt, 12, col))
+        return p
+
+
+# ==================== СЕТЫ АРТЕФАКТОВ В ГАЛЕРЕЕ (v0.27.0) ====================
+
+func _gallery_sets_block():
+        gallery_list.add_child(_gallery_section(Loc.t("sets.title")))
+        var hint := BunkerUI.make_mono_label(Loc.t("sets.hint"), 11, BunkerUI.TEXT_FAINT)
+        hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+        gallery_list.add_child(hint)
+        var won: Array = lab_data.won_artifacts if lab_data != null else []
+        var row := HBoxContainer.new()
+        row.add_theme_constant_override("separation", 6)
+        gallery_list.add_child(row)
+        _sets_info_label = BunkerUI.make_mono_label("", 11, BunkerUI.TEXT_DIM)
+        _sets_info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+        _sets_info_label.custom_minimum_size = Vector2(0, 18)
+        for state in ArtifactSets.sets_state(won):
+                var def: Dictionary = state["def"]
+                var stage: int = int(state["stage"])
+                var col: Color = def["color"]
+                var b := Button.new()
+                b.text = "%s %d/%d" % [str(def["name"]), int(state["have"]), int(state["size"])]
+                b.add_theme_font_override("font", BunkerUI.font_title())
+                b.add_theme_font_size_override("font_size", 12)
+                b.add_theme_color_override("font_color", col if stage > 0 else BunkerUI.TEXT_DIM)
+                b.custom_minimum_size = Vector2(104, 42)
+                BunkerUI.style_button(b, "steel", 12)
+                if stage >= 2:
+                        b.tooltip_text = Loc.t(ArtifactSets.bonus_loc_key(str(def["id"]), stage))
+                b.pressed.connect(_sets_show_info.bind(str(def["id"]), stage, col))
+                b.mouse_entered.connect(_play_hover_sound)
+                row.add_child(b)
+        gallery_list.add_child(_sets_info_label)
+
+
+func _sets_show_info(set_id: String, stage: int, col: Color):
+        _play_click_sound()
+        var key: String = ArtifactSets.bonus_loc_key(set_id, stage) if stage >= 2 else "sets.none"
+        _sets_info_label.text = Loc.t(key)
+        _sets_info_label.add_theme_color_override("font_color", col if stage >= 2 else BunkerUI.TEXT_DIM)

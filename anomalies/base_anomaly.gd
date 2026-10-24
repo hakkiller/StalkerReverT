@@ -35,6 +35,7 @@ var creation_time: float = 0.0
 
 func _ready():
 	creation_time = Time.get_ticks_msec() / 1000.0
+	_apply_artifact_sets()
 	max_health = health
 	
 	add_to_group("anomalies")
@@ -46,6 +47,23 @@ func _ready():
 	
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
+
+
+
+## Сеты артефактов (v0.27.0): 2-3 арта одного элемента усиливают аномалии
+## своего элемента (урон; радиус - на 3-й ступени управляющих сетов).
+## Данные читаются из лаборатории сейва; вне забега/сейва - no-op.
+func _apply_artifact_sets():
+	var gm = get_tree().get_first_node_in_group("game_manager")
+	if gm == null or gm.current_save_data == null or gm.current_save_data.lab_data == null:
+		return
+	var won: Array = gm.current_save_data.lab_data.won_artifacts
+	var dmg: float = ArtifactSets.damage_mult_for_anomaly(anomaly_type, won)
+	if dmg != 1.0:
+		damage_per_second *= dmg
+	var rad: float = ArtifactSets.radius_mult_for_anomaly(anomaly_type, won)
+	if rad != 1.0:
+		radius *= rad
 
 
 func _setup_timers():

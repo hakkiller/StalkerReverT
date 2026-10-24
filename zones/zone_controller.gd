@@ -321,6 +321,9 @@ func _initialize_run():
                                                 float(campaign.get("damage_mult", 1.0)),
                                                 float(campaign.get("speed_mult", 1.0)))
 
+                                # Стражи башни (25/50/75/100): доля элиты в волнах
+                                spawn_manager.set_elite_share(float(campaign.get("elite_pct", 0.0)))
+
                                 # Припять: Монолит перемещается по маршруту ярусов
                                 # (центр города -> Саркофаг), точка - от уровня/этажа
                                 if str(run_params.get("map", "procedural")) == "pripyat":
