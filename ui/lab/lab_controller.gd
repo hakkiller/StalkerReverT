@@ -1725,14 +1725,15 @@ func _swipe_tap(lay: Control, scroll: ScrollContainer, pos: Vector2) -> void:
                                 _on_farm_card_selected(str(c.get_meta("type")))
                                 return
                 return
-        if scroll == _farm_modes_scroll:
-                var btns: Array = farm_list.find_children("*", "Button", true, false)
-                btns.reverse()
-                for b in btns:
-                        if b is Button and not b.is_queued_for_deletion() and b.visible \
-                                        and (b as Button).get_global_rect().has_point(gp):
-                                (b as Button).pressed.emit()
-                                return
+        # Общий случай: кнопка под пальцем (режимы фермы, задачи, лента сундуков)
+        var btns: Array = scroll.find_children("*", "Button", true, false)
+        btns.reverse()
+        for b in btns:
+                if b is Button and not b.is_queued_for_deletion() and b.visible \
+                                and not b.disabled \
+                                and (b as Button).get_global_rect().has_point(gp):
+                        (b as Button).pressed.emit()
+                        return
 
 
 ## Жирный скроллбар — палец попадает (старый был ~8 px, «неуловимый»)
@@ -4608,6 +4609,8 @@ var _tasks_level_bar: ProgressBar = null
 var _tasks_level_sub: Label = null
 var _tasks_lists_box: VBoxContainer = null
 var _tasks_track_row: HBoxContainer = null
+var _tasks_left_scroll: ScrollContainer = null
+var _tasks_track_scroll: ScrollContainer = null
 
 
 func _build_tasks_ui():
@@ -4690,7 +4693,12 @@ func _build_tasks_ui():
         left_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
         left_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
         left_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-        body.add_child(left_scroll)
+        left_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_ALWAYS
+        _tasks_left_scroll = left_scroll
+        # Свайп-слой (рецепт фермы): тянешь — список едет, тап — кнопка под пальцем
+        var left_wrap := _make_swipe_overlay(left_scroll, false, 0.0, 24.0)
+        body.add_child(left_wrap)
+        _style_fat_scrollbar(left_scroll.get_v_scroll_bar(), false)
 
         _tasks_lists_box = VBoxContainer.new()
         _tasks_lists_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -4716,10 +4724,15 @@ func _build_tasks_ui():
         root.add_child(_tasks_track_sub)
 
         var track_scroll := ScrollContainer.new()
-        track_scroll.custom_minimum_size = Vector2(0, 170)
-        track_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        track_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_ALWAYS
         track_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-        root.add_child(track_scroll)
+        _tasks_track_scroll = track_scroll
+        # Свайп-слой: лента тянется пальцем, плитки-кнопки больше не съедают тач
+        var track_wrap := _make_swipe_overlay(track_scroll, true, 24.0, 0.0)
+        track_wrap.custom_minimum_size = Vector2(0, 200)
+        track_wrap.size_flags_vertical = Control.SIZE_FILL
+        root.add_child(track_wrap)
+        _style_fat_scrollbar(track_scroll.get_h_scroll_bar(), true)
 
         _tasks_track_row = HBoxContainer.new()
         _tasks_track_row.add_theme_constant_override("separation", 10)
