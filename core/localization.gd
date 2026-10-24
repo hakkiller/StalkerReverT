@@ -601,7 +601,8 @@ const STRINGS := {
         "trader.buy": {"ru": "КУПИТЬ", "en": "BUY"},
         "trader.sold": {"ru": "ПРОДАНО", "en": "SOLD"},
         "trader.no_money": {"ru": "Не хватает биомассы!", "en": "Not enough biomass!"},
-        "trader.bought": {"ru": "Куплено: {name}", "en": "Bought: {name}"},
+        "trader.bought": {"ru": "Куплено: {name} (-{cost} биомассы)", "en": "Bought: {name} (-{cost} biomass)"},
+        "trader.biomass": {"ru": "Биомасса: {n}", "en": "Biomass: {n}"},
         "trader.close": {"ru": "ЗАКРЫТЬ", "en": "CLOSE"},
 }
 

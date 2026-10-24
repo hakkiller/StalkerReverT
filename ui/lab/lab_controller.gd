@@ -1231,8 +1231,6 @@ var _farm_filter_count: Label = null
 # Свайп карточек: слой перехватывает палец (кнопки-карточки съедали тач и свайп не работал)
 var _farm_cards_wrap: Control = null
 var _farm_modes_wrap: Control = null
-var _swipe_state: Dictionary = {}
-var _swipe_inertias: Dictionary = {}
 
 
 func _build_farm_ui():
@@ -1346,9 +1344,8 @@ func _build_farm_ui():
         _farm_cards_scroll = ScrollContainer.new()
         _farm_cards_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_ALWAYS
         _farm_cards_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-        _farm_cards_wrap = _make_swipe_overlay(_farm_cards_scroll, true, 24.0, 0.0)
+        _farm_cards_wrap = _make_swipe_overlay(_farm_cards_scroll, true)
         body.add_child(_farm_cards_wrap)
-        _style_fat_scrollbar(_farm_cards_scroll.get_h_scroll_bar(), true)
 
         _farm_cards_box = HBoxContainer.new()
         _farm_cards_box.add_theme_constant_override("separation", 14)
@@ -1360,9 +1357,8 @@ func _build_farm_ui():
         _farm_modes_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
         _farm_modes_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_ALWAYS
         _farm_modes_scroll.visible = false
-        _farm_modes_wrap = _make_swipe_overlay(_farm_modes_scroll, false, 0.0, 24.0)
+        _farm_modes_wrap = _make_swipe_overlay(_farm_modes_scroll, false)
         body.add_child(_farm_modes_wrap)
-        _style_fat_scrollbar(_farm_modes_scroll.get_v_scroll_bar(), false)
 
         farm_list = VBoxContainer.new()
         farm_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1599,25 +1595,8 @@ func _on_farm_card_selected(type: String):
 
 func _process(delta: float) -> void:
         """Инерция свайпа фермы: палец отпущен — список едет и плавно тормозит."""
+        # Инерция свайпа живёт в SwipeHelper (ui/base/swipe_helper.gd, v0.29.2)
         _tw_tick(delta)
-        if _swipe_inertias.is_empty():
-                return
-        for sc in _swipe_inertias.keys():
-                var info: Dictionary = _swipe_inertias[sc]
-                var v: float = float(info["vel"])
-                var hz: bool = bool(info["horiz"])
-                var cur: int = sc.scroll_horizontal if hz else sc.scroll_vertical
-                var mx: int = int(sc.get_h_scroll_bar().max_value) if hz else int(sc.get_v_scroll_bar().max_value)
-                var nxt: int = clampi(cur + int(round(v * delta)), 0, maxi(mx, 0))
-                if hz:
-                        sc.scroll_horizontal = nxt
-                else:
-                        sc.scroll_vertical = nxt
-                v *= pow(0.002, delta)
-                if absf(v) < 40.0 or nxt == cur:
-                        _swipe_inertias.erase(sc)
-                else:
-                        info["vel"] = v
 
 
 func _on_farm_filter_pressed(filter: String):
@@ -1658,77 +1637,15 @@ func _farm_sort_cmp(a: String, b: String) -> bool:
         return GachaData.display_name(a) < GachaData.display_name(b)
 
 
-## Скролл + прозрачный слой свайпа поверх: тянешь — список едет,
-## тап без движения — выбирает карточку/кнопку под пальцем.
-## reserve_bottom/right — полоска под жирный скроллбар (слой его не перекрывает).
+## Свайп-обёртка (v0.29.2): единый SwipeHelper (ui/base/swipe_helper.gd) -
+## свайп 1:1 за пальцем, EMA-инерция, тап кнопки/карточки, скроллбары невидимы.
+## reserve_bottom/right оставлены в подписи для совместимости (обычно 0.0).
 func _make_swipe_overlay(scroll: ScrollContainer, horiz: bool, reserve_bottom: float = 0.0, reserve_right: float = 0.0) -> Control:
-        var wrap := Control.new()
-        wrap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-        wrap.size_flags_vertical = Control.SIZE_EXPAND_FILL
-        wrap.mouse_filter = Control.MOUSE_FILTER_IGNORE
-        scroll.set_anchors_preset(Control.PRESET_FULL_RECT)
-        scroll.offset_bottom = -reserve_bottom
-        scroll.offset_right = -reserve_right
-        wrap.add_child(scroll)
-        var lay := Control.new()
-        lay.name = "SwipeLayer"
-        lay.set_anchors_preset(Control.PRESET_FULL_RECT)
-        lay.offset_bottom = -reserve_bottom
-        lay.offset_right = -reserve_right
-        lay.mouse_filter = Control.MOUSE_FILTER_STOP
-        wrap.add_child(lay)
-        lay.set_meta("scroll", scroll)
-        lay.set_meta("horiz", horiz)
-        lay.gui_input.connect(_on_swipe_layer_input.bind(lay))
-        return wrap
-
-
-func _on_swipe_layer_input(ev: InputEvent, lay: Control) -> void:
-        var scroll: ScrollContainer = lay.get_meta("scroll")
-        var horiz: bool = lay.get_meta("horiz")
-        if not scroll.visible:
-                return
-        var st: Dictionary = _swipe_state.get(lay, {})
-        if ev is InputEventMouseButton and ev.button_index == MOUSE_BUTTON_LEFT:
-                if ev.pressed:
-                        st = {"active": true, "moved": false, "total": 0.0,
-                                        "last": ev.position.x if horiz else ev.position.y,
-                                        "t0": Time.get_ticks_msec(), "lt": Time.get_ticks_msec()}
-                        _swipe_inertias.erase(scroll)
-                elif st.get("active", false):
-                        st["active"] = false
-                        var dt_ms: int = Time.get_ticks_msec() - int(st["t0"])
-                        if not bool(st["moved"]) and dt_ms < 450:
-                                _swipe_tap(lay, scroll, ev.position)
-                        elif absf(float(st.get("vel", 0.0))) > 40.0:
-                                _swipe_inertias[scroll] = {"vel": -float(st["vel"]), "horiz": horiz}
-                _swipe_state[lay] = st
-                lay.accept_event()
-        elif ev is InputEventMouseMotion and bool(st.get("active", false)) and (ev.button_mask & MOUSE_BUTTON_MASK_LEFT):
-                var pos: float = ev.position.x if horiz else ev.position.y
-                var dx: float = pos - float(st["last"])
-                st["last"] = pos
-                st["total"] = float(st["total"]) + dx
-                if absf(float(st["total"])) > 10.0:
-                        st["moved"] = true
-                var d: int = -int(round(dx))
-                if horiz:
-                        var hbar: HScrollBar = scroll.get_h_scroll_bar()
-                        scroll.scroll_horizontal = clampi(scroll.scroll_horizontal + d, 0, int(hbar.max_value))
-                else:
-                        var vbar: VScrollBar = scroll.get_v_scroll_bar()
-                        scroll.scroll_vertical = clampi(scroll.scroll_vertical + d, 0, int(vbar.max_value))
-                var now: int = Time.get_ticks_msec()
-                var dt: float = float(maxi(now - int(st.get("lt", now)), 1)) / 1000.0
-                st["lt"] = now
-                st["vel"] = dx / dt
-                _swipe_state[lay] = st
-                lay.accept_event()
+        return SwipeHelper.attach(scroll, horiz, reserve_bottom, reserve_right, Callable(self, "_swipe_tap"))
 
 
 ## Тап по слою: карточка (горизонтальный режим) или кнопка (вертикальные списки)
-func _swipe_tap(lay: Control, scroll: ScrollContainer, pos: Vector2) -> void:
-        var gp: Vector2 = lay.get_global_transform() * pos
+func _swipe_tap(scroll: ScrollContainer, gp: Vector2) -> void:
         if scroll == _farm_cards_scroll:
                 var kids: Array = _farm_cards_box.get_children()
                 kids.reverse()
@@ -4723,9 +4640,8 @@ func _build_tasks_ui():
         left_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_ALWAYS
         _tasks_left_scroll = left_scroll
         # Свайп-слой (рецепт фермы): тянешь — список едет, тап — кнопка под пальцем
-        var left_wrap := _make_swipe_overlay(left_scroll, false, 0.0, 24.0)
+        var left_wrap := _make_swipe_overlay(left_scroll, false)
         body.add_child(left_wrap)
-        _style_fat_scrollbar(left_scroll.get_v_scroll_bar(), false)
 
         _tasks_lists_box = VBoxContainer.new()
         _tasks_lists_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -4755,11 +4671,10 @@ func _build_tasks_ui():
         track_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
         _tasks_track_scroll = track_scroll
         # Свайп-слой: лента тянется пальцем, плитки-кнопки больше не съедают тач
-        var track_wrap := _make_swipe_overlay(track_scroll, true, 0.0, 0.0)
+        var track_wrap := _make_swipe_overlay(track_scroll, true)
         track_wrap.custom_minimum_size = Vector2(0, 200)
         track_wrap.size_flags_vertical = Control.SIZE_FILL
         root.add_child(track_wrap)
-        _hide_scrollbar(track_scroll.get_h_scroll_bar())
 
         _tasks_track_row = HBoxContainer.new()
         _tasks_track_row.add_theme_constant_override("separation", 10)
@@ -5227,9 +5142,8 @@ func _build_tasks_widget():
         rows_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
         rows_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
         rows_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_ALWAYS
-        var rows_wrap := _make_swipe_overlay(rows_scroll, false, 0.0, 0.0)
+        var rows_wrap := _make_swipe_overlay(rows_scroll, false)
         v.add_child(rows_wrap)
-        _hide_scrollbar(rows_scroll.get_v_scroll_bar())
         _tw_rows_box = VBoxContainer.new()
         _tw_rows_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
         _tw_rows_box.add_theme_constant_override("separation", 6)

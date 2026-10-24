@@ -25,6 +25,7 @@ var _on_buy: Callable = Callable()
 var _biomass_getter: Callable = Callable()
 var _items_getter: Callable = Callable()
 var _biomass_label: Label = null
+var _biomass_last: float = -1.0
 var _shop_note_label: Label = null
 var _shop_note_seq: int = 0
 var _shop_grid: GridContainer = null
@@ -111,6 +112,8 @@ func show_shop(items: Array, on_buy: Callable, biomass_getter: Callable, items_g
 	v.add_child(_make_label(Loc.t("trader.title"), 44, COL_GOLD, true))
 	v.add_child(_make_label(Loc.t("trader.note"), 18, COL_DIM))
 	_biomass_label = _make_label("", 23, COL_SAFE, true)
+	_biomass_label.add_theme_color_override("font_color", COL_SAFE)
+	_biomass_last = -1.0
 	v.add_child(_biomass_label)
 	_shop_note_label = _make_label("", 19, COL_RISK, true)
 	_shop_note_label.visible = false
@@ -124,7 +127,8 @@ func show_shop(items: Array, on_buy: Callable, biomass_getter: Callable, items_g
 	grid.add_theme_constant_override("v_separation", 14)
 	_shop_grid = grid
 	scroll.add_child(grid)
-	v.add_child(scroll)
+	# Свайп-слой (v0.29.2): тянешь - едет, флик - инерция, тап - КУПИТЬ под пальцем
+	v.add_child(SwipeHelper.attach(scroll, false))
 	var close_btn := Button.new()
 	close_btn.text = Loc.t("trader.close")
 	_style_button(close_btn, COL_GOLD, 19)
@@ -218,6 +222,16 @@ func _update_biomass_label() -> void:
 		return
 	var value: float = float(_biomass_getter.call()) if _biomass_getter.is_valid() else 0.0
 	_biomass_label.text = Loc.t("trader.biomass", {"n": int(value)})
+	# Списание видно глазом: цифра вздрагивает красным при трате, зелёным - к пополнению
+	if _biomass_last >= 0.0 and not is_equal_approx(value, _biomass_last):
+		var col: Color = Color(1.0, 0.42, 0.3) if value < _biomass_last else COL_SAFE
+		_biomass_label.add_theme_color_override("font_color", col)
+		var tw := create_tween()
+		tw.tween_interval(0.6)
+		tw.tween_callback(func():
+			if is_instance_valid(_biomass_label):
+				_biomass_label.add_theme_color_override("font_color", COL_SAFE))
+	_biomass_last = value
 
 
 func _shop_note(text: String, col: Color) -> void:

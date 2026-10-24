@@ -602,8 +602,7 @@ func _build_strips() -> void:
         var av_scroll := ScrollContainer.new()
         av_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
         av_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-        av_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-        avbox.add_child(av_scroll)
+        avbox.add_child(SwipeHelper.attach(av_scroll, true))
         var av_hb := HBoxContainer.new()
         av_hb.add_theme_constant_override("separation", 10)
         av_scroll.add_child(av_hb)
@@ -623,8 +622,7 @@ func _build_strips() -> void:
         var fr_scroll := ScrollContainer.new()
         fr_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
         fr_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-        fr_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-        frbox.add_child(fr_scroll)
+        frbox.add_child(SwipeHelper.attach(fr_scroll, true))
         var fr_hb := HBoxContainer.new()
         fr_hb.add_theme_constant_override("separation", 10)
         fr_scroll.add_child(fr_hb)
@@ -1125,9 +1123,8 @@ func _build_avatar_dlg() -> void:
 
         var scroll := ScrollContainer.new()
         scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-        scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-        scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-        v.add_child(scroll)
+        # Свайп (v0.29.2): коллекция тянется пальцем, полоса невидима
+        v.add_child(SwipeHelper.attach(scroll, false))
 
         _dl_grid = GridContainer.new()
         _dl_grid.columns = 7
@@ -2101,7 +2098,8 @@ func _build_medals_panel() -> void:
         sc.size_flags_vertical = Control.SIZE_EXPAND_FILL
         sc.size_flags_horizontal = Control.SIZE_EXPAND_FILL
         sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-        v.add_child(sc)
+        # Свайп (v0.29.2): плитки тянутся пальцем с инерцией, полоса невидима
+        v.add_child(SwipeHelper.attach(sc, false))
         _medals_grid = GridContainer.new()
         _medals_grid.columns = 2
         _medals_grid.add_theme_constant_override("h_separation", 10)
@@ -2186,13 +2184,22 @@ func _medal_make_tile(m: Dictionary, claimed: bool, claimable: bool, pr: Vector2
         vv.add_theme_constant_override("separation", 3)
         h.add_child(vv)
 
+        var head := HBoxContainer.new()
+        head.add_theme_constant_override("separation", 8)
+        vv.add_child(head)
         var ttl := Label.new()
         ttl.text = _medal_txt(m, "t")
         ttl.add_theme_font_override("font", BunkerUI.font_title())
         ttl.add_theme_font_size_override("font_size", 15)
         ttl.add_theme_color_override("font_color",
                 BunkerUI.TEXT_LIGHT if not claimed else BunkerUI.GREEN)
-        vv.add_child(ttl)
+        head.add_child(ttl)
+        var hsp := Control.new()
+        hsp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        head.add_child(hsp)
+        # Статус "открыто или нет" - ВВЕРХ плитки (v0.29.2): раньше сидел внизу
+        # и перекрывался ползунком скролла
+        var st_lbl: Label = null
 
         var desc := BunkerUI.make_mono_label(_medal_txt(m, "d"), 12, BunkerUI.TEXT_DIM)
         desc.clip_text = true
@@ -2224,8 +2231,7 @@ func _medal_make_tile(m: Dictionary, claimed: bool, claimable: bool, pr: Vector2
         var status := "locked"
         if claimed:
                 status = "claimed"
-                var sl := BunkerUI.make_mono_label(Loc.t("medals.done"), 12, BunkerUI.GREEN)
-                brow.add_child(sl)
+                st_lbl = BunkerUI.make_mono_label(Loc.t("medals.done"), 12, BunkerUI.GREEN)
         elif claimable:
                 status = "claimable"
                 var btn := Button.new()
@@ -2235,8 +2241,10 @@ func _medal_make_tile(m: Dictionary, claimed: bool, claimable: bool, pr: Vector2
                 btn.pressed.connect(func(): _medal_claim(str(m["id"])))
                 brow.add_child(btn)
         else:
-                var sl2 := BunkerUI.make_mono_label(Loc.t("medals.locked", {"cur": pr.x, "need": pr.y}), 12, BunkerUI.TEXT_FAINT)
-                brow.add_child(sl2)
+                st_lbl = BunkerUI.make_mono_label(Loc.t("medals.locked", {"cur": pr.x, "need": pr.y}), 12, BunkerUI.TEXT_FAINT)
+        if st_lbl != null:
+                st_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+                head.add_child(st_lbl)
 
         return {"panel": p, "sb": sb, "state": status}
 

@@ -1366,7 +1366,7 @@ func _trader_buy(item_id: String) -> String:
                 _trader_sold[id] = int(_trader_sold.get(id, 0)) + 1
                 _apply_run_effect(item.get("effect", {}))
                 var ru: bool = Loc.lang == "ru"
-                return Loc.t("trader.bought", {"name": str(item.get("name_ru", "") if ru else item.get("name_en", ""))})
+                return Loc.t("trader.bought", {"name": str(item.get("name_ru", "") if ru else item.get("name_en", "")), "cost": int(cost)})
 
 
 # ==================== ЦИКЛ ДНЯ И НОЧИ (v0.29.0) ====================
