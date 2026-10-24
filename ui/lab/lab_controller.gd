@@ -1212,6 +1212,15 @@ var _farm_altar_panel: Panel
 var _farm_altar_box: VBoxContainer
 var _farm_biomass_chip: Label = null
 var _farm_rolls_chip: Label = null
+# Фильтр фермы (адаптация галерейного): all | ready | exclusive | max
+var _farm_filter: String = "all"
+var _farm_filter_group: ButtonGroup = null
+var _farm_filter_count: Label = null
+# Свайп карточек: слой перехватывает палец (кнопки-карточки съедали тач и свайп не работал)
+var _farm_cards_wrap: Control = null
+var _farm_modes_wrap: Control = null
+var _swipe_state: Dictionary = {}
+var _swipe_inertias: Dictionary = {}
 
 
 func _build_farm_ui():
@@ -1291,33 +1300,57 @@ func _build_farm_ui():
         head.add_child(rolls_plate)
         _farm_rolls_chip = rolls_plate.get_child(0).get_child(0)
 
+        # ---- Фильтры (как в галерее): ВСЕ / ГОТОВЫЕ / ЭКСКЛЮЗИВЫ / МАКС + счётчик ----
+        var frow := HBoxContainer.new()
+        frow.name = "FarmFilterRow"
+        frow.add_theme_constant_override("separation", 6)
+        root.add_child(frow)
+
+        _farm_filter_group = ButtonGroup.new()
+        for fdef in [["all", "ВСЕ"], ["ready", "ГОТОВЫЕ"], ["exclusive", "ЭКСКЛЮЗИВЫ"], ["max", "МАКС ★5"]]:
+                var fb := Button.new()
+                fb.text = str(fdef[1])
+                fb.toggle_mode = true
+                fb.button_group = _farm_filter_group
+                fb.button_pressed = str(fdef[0]) == _farm_filter
+                fb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+                BunkerUI.style_button(fb, "steel", 12)
+                fb.pressed.connect(_on_farm_filter_pressed.bind(str(fdef[0])))
+                frow.add_child(fb)
+
+        _farm_filter_count = BunkerUI.make_mono_label("", 12, Color("ffd94d"))
+        _farm_filter_count.custom_minimum_size = Vector2(150, 0)
+        _farm_filter_count.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+        _farm_filter_count.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+        frow.add_child(_farm_filter_count)
+
         # ---- Тело: карточки (лево) + алтарь (право) ----
         var body := HBoxContainer.new()
         body.size_flags_vertical = Control.SIZE_EXPAND_FILL
         body.add_theme_constant_override("separation", 16)
         root.add_child(body)
 
-        # Горизонтальный скролл карточек (обычный режим)
+        # Горизонтальный скролл карточек (обычный режим) + слой свайпа поверх
         _farm_cards_scroll = ScrollContainer.new()
-        _farm_cards_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-        _farm_cards_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-        _farm_cards_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+        _farm_cards_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_ALWAYS
         _farm_cards_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-        body.add_child(_farm_cards_scroll)
+        _farm_cards_wrap = _make_swipe_overlay(_farm_cards_scroll, true, 24.0, 0.0)
+        body.add_child(_farm_cards_wrap)
+        _style_fat_scrollbar(_farm_cards_scroll.get_h_scroll_bar(), true)
 
         _farm_cards_box = HBoxContainer.new()
         _farm_cards_box.add_theme_constant_override("separation", 14)
         _farm_cards_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
         _farm_cards_scroll.add_child(_farm_cards_box)
 
-        # Вертикальный скролл режимов (кормление/грелка/утилизация)
+        # Вертикальный скролл режимов (кормление/грелка/утилизация) + слой свайпа
         _farm_modes_scroll = ScrollContainer.new()
-        _farm_modes_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-        _farm_modes_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
         _farm_modes_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-        _farm_modes_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+        _farm_modes_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_ALWAYS
         _farm_modes_scroll.visible = false
-        body.add_child(_farm_modes_scroll)
+        _farm_modes_wrap = _make_swipe_overlay(_farm_modes_scroll, false, 0.0, 24.0)
+        body.add_child(_farm_modes_wrap)
+        _style_fat_scrollbar(_farm_modes_scroll.get_v_scroll_bar(), false)
 
         farm_list = VBoxContainer.new()
         farm_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1368,7 +1401,7 @@ func _build_farm_ui():
 
         var hint := Label.new()
         hint.name = "FarmHint"
-        hint.text = "звёзды живут внутри фермы:\nвыберите питомца — алтарь справа"
+        hint.text = "свайпайте карточки ←→ · тап — выбрать\nфильтры сверху · алтарь справа"
         hint.add_theme_font_override("font", BunkerUI.font_mono())
         hint.add_theme_font_size_override("font_size", 12)
         hint.add_theme_color_override("font_color", BunkerUI.TEXT_FAINT)
@@ -1422,6 +1455,7 @@ func _make_farm_card(type: String) -> Control:
         card.custom_minimum_size = Vector2(236, 0)
         card.size_flags_vertical = Control.SIZE_EXPAND_FILL
         card.focus_mode = Control.FOCUS_NONE
+        card.set_meta("type", type)
 
         var sb := StyleBoxFlat.new()
         sb.bg_color = Color(0.086, 0.11, 0.062, 1.0)
@@ -1547,6 +1581,178 @@ func _on_farm_card_selected(type: String):
         _farm_selected = type
         _farm_mode = "cards"
         _rebuild_farm_panel()
+
+
+# ==================== ФЕРМА: ФИЛЬТР + СВАЙП ====================
+
+func _process(delta: float) -> void:
+        """Инерция свайпа фермы: палец отпущен — список едет и плавно тормозит."""
+        if _swipe_inertias.is_empty():
+                return
+        for sc in _swipe_inertias.keys():
+                var info: Dictionary = _swipe_inertias[sc]
+                var v: float = float(info["vel"])
+                var hz: bool = bool(info["horiz"])
+                var cur: int = sc.scroll_horizontal if hz else sc.scroll_vertical
+                var mx: int = int(sc.get_h_scroll_bar().max_value) if hz else int(sc.get_v_scroll_bar().max_value)
+                var nxt: int = clampi(cur + int(round(v * delta)), 0, maxi(mx, 0))
+                if hz:
+                        sc.scroll_horizontal = nxt
+                else:
+                        sc.scroll_vertical = nxt
+                v *= pow(0.002, delta)
+                if absf(v) < 40.0 or nxt == cur:
+                        _swipe_inertias.erase(sc)
+                else:
+                        info["vel"] = v
+
+
+func _on_farm_filter_pressed(filter: String):
+        _play_click_sound()
+        _farm_filter = filter
+        _rebuild_farm_panel()
+
+
+## Фильтр питомцев фермы (адаптация галерейного): all | ready | exclusive | max
+func _farm_apply_filter(types) -> Array:
+        var out: Array = []
+        for t in types:
+                var tt: String = str(t)
+                if _farm_filter == "ready":
+                        if lab_data.get_star_feed(tt) >= 1:
+                                out.append(tt)
+                elif _farm_filter == "exclusive":
+                        if not GachaData.get_exclusive(tt).is_empty():
+                                out.append(tt)
+                elif _farm_filter == "max":
+                        if lab_data.get_mutant_stars(tt) >= LabData.MAX_STARS:
+                                out.append(tt)
+                else:
+                        out.append(tt)
+        return out
+
+
+## Сортировка: сильные слева (как в галерее), при равенстве — больше звёзд, потом по имени
+func _farm_sort_cmp(a: String, b: String) -> bool:
+        var sa: float = _mutant_strength(a)
+        var sb: float = _mutant_strength(b)
+        if absf(sa - sb) > 0.01:
+                return sa > sb
+        var sta: int = lab_data.get_mutant_stars(a)
+        var stb: int = lab_data.get_mutant_stars(b)
+        if sta != stb:
+                return sta > stb
+        return GachaData.display_name(a) < GachaData.display_name(b)
+
+
+## Скролл + прозрачный слой свайпа поверх: тянешь — список едет,
+## тап без движения — выбирает карточку/кнопку под пальцем.
+## reserve_bottom/right — полоска под жирный скроллбар (слой его не перекрывает).
+func _make_swipe_overlay(scroll: ScrollContainer, horiz: bool, reserve_bottom: float = 0.0, reserve_right: float = 0.0) -> Control:
+        var wrap := Control.new()
+        wrap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        wrap.size_flags_vertical = Control.SIZE_EXPAND_FILL
+        wrap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+        scroll.set_anchors_preset(Control.PRESET_FULL_RECT)
+        scroll.offset_bottom = -reserve_bottom
+        scroll.offset_right = -reserve_right
+        wrap.add_child(scroll)
+        var lay := Control.new()
+        lay.name = "SwipeLayer"
+        lay.set_anchors_preset(Control.PRESET_FULL_RECT)
+        lay.offset_bottom = -reserve_bottom
+        lay.offset_right = -reserve_right
+        lay.mouse_filter = Control.MOUSE_FILTER_STOP
+        wrap.add_child(lay)
+        lay.set_meta("scroll", scroll)
+        lay.set_meta("horiz", horiz)
+        lay.gui_input.connect(_on_swipe_layer_input.bind(lay))
+        return wrap
+
+
+func _on_swipe_layer_input(ev: InputEvent, lay: Control) -> void:
+        var scroll: ScrollContainer = lay.get_meta("scroll")
+        var horiz: bool = lay.get_meta("horiz")
+        if not scroll.visible:
+                return
+        var st: Dictionary = _swipe_state.get(lay, {})
+        if ev is InputEventMouseButton and ev.button_index == MOUSE_BUTTON_LEFT:
+                if ev.pressed:
+                        st = {"active": true, "moved": false, "total": 0.0,
+                                        "last": ev.position.x if horiz else ev.position.y,
+                                        "t0": Time.get_ticks_msec(), "lt": Time.get_ticks_msec()}
+                        _swipe_inertias.erase(scroll)
+                elif st.get("active", false):
+                        st["active"] = false
+                        var dt_ms: int = Time.get_ticks_msec() - int(st["t0"])
+                        if not bool(st["moved"]) and dt_ms < 450:
+                                _swipe_tap(lay, scroll, ev.position)
+                        elif absf(float(st.get("vel", 0.0))) > 40.0:
+                                _swipe_inertias[scroll] = {"vel": -float(st["vel"]), "horiz": horiz}
+                _swipe_state[lay] = st
+                lay.accept_event()
+        elif ev is InputEventMouseMotion and bool(st.get("active", false)) and (ev.button_mask & MOUSE_BUTTON_MASK_LEFT):
+                var pos: float = ev.position.x if horiz else ev.position.y
+                var dx: float = pos - float(st["last"])
+                st["last"] = pos
+                st["total"] = float(st["total"]) + dx
+                if absf(float(st["total"])) > 10.0:
+                        st["moved"] = true
+                var d: int = -int(round(dx))
+                if horiz:
+                        var hbar: HScrollBar = scroll.get_h_scroll_bar()
+                        scroll.scroll_horizontal = clampi(scroll.scroll_horizontal + d, 0, int(hbar.max_value))
+                else:
+                        var vbar: VScrollBar = scroll.get_v_scroll_bar()
+                        scroll.scroll_vertical = clampi(scroll.scroll_vertical + d, 0, int(vbar.max_value))
+                var now: int = Time.get_ticks_msec()
+                var dt: float = float(maxi(now - int(st.get("lt", now)), 1)) / 1000.0
+                st["lt"] = now
+                st["vel"] = dx / dt
+                _swipe_state[lay] = st
+                lay.accept_event()
+
+
+## Тап по слою: карточка (горизонтальный режим) или кнопка (вертикальные списки)
+func _swipe_tap(lay: Control, scroll: ScrollContainer, pos: Vector2) -> void:
+        var gp: Vector2 = lay.get_global_transform() * pos
+        if scroll == _farm_cards_scroll:
+                var kids: Array = _farm_cards_box.get_children()
+                kids.reverse()
+                for c in kids:
+                        if c is Control and not c.is_queued_for_deletion() and c.has_meta("type") \
+                                        and (c as Control).get_global_rect().has_point(gp):
+                                _on_farm_card_selected(str(c.get_meta("type")))
+                                return
+                return
+        if scroll == _farm_modes_scroll:
+                var btns: Array = farm_list.find_children("*", "Button", true, false)
+                btns.reverse()
+                for b in btns:
+                        if b is Button and not b.is_queued_for_deletion() and b.visible \
+                                        and (b as Button).get_global_rect().has_point(gp):
+                                (b as Button).pressed.emit()
+                                return
+
+
+## Жирный скроллбар — палец попадает (старый был ~8 px, «неуловимый»)
+func _style_fat_scrollbar(bar: ScrollBar, horizontal: bool) -> void:
+        if bar == null:
+                return
+        bar.custom_minimum_size = Vector2(0, 24) if horizontal else Vector2(24, 0)
+        var track := StyleBoxFlat.new()
+        track.bg_color = Color(0.05, 0.07, 0.04, 0.7)
+        track.set_corner_radius_all(6)
+        var grab := StyleBoxFlat.new()
+        grab.bg_color = Color("7d9a52")
+        grab.set_corner_radius_all(5)
+        var grabh := StyleBoxFlat.new()
+        grabh.bg_color = Color("a4c46e")
+        grabh.set_corner_radius_all(5)
+        bar.add_theme_stylebox_override("scroll", track)
+        bar.add_theme_stylebox_override("grabber", grab)
+        bar.add_theme_stylebox_override("grabber_highlight", grabh)
+        bar.add_theme_stylebox_override("grabber_pressed", grabh)
 
 
 ## Одна строка «ключ — значение» алтаря
@@ -1714,6 +1920,10 @@ func _rebuild_farm_panel():
                 _farm_rolls_chip.text = str(lab_data.gacha_rolls_mutants)
         _farm_altar_panel.visible = _farm_mode == "cards" and _feed_fodder.is_empty() and not _recycle_mode
         var cards_mode: bool = _farm_mode == "cards" and _feed_fodder.is_empty() and not _recycle_mode
+        if _farm_cards_wrap:
+                _farm_cards_wrap.visible = cards_mode
+        if _farm_modes_wrap:
+                _farm_modes_wrap.visible = not cards_mode
         _farm_cards_scroll.visible = cards_mode
         _farm_modes_scroll.visible = not cards_mode
 
@@ -1802,15 +2012,19 @@ func _rebuild_farm_panel():
                         farm_list.add_child(empty2)
                 return
 
-        # Обычный режим: карточки питомцев в ряд
+        # Обычный режим: карточки питомцев в ряд — фильтр + сортировка по силе (как в галерее)
         for child in _farm_cards_box.get_children():
                 child.queue_free()
-        for type in lab_data.unlocked_mutants:
+        var pets: Array = _farm_apply_filter(lab_data.unlocked_mutants)
+        pets.sort_custom(_farm_sort_cmp)
+        for type in pets:
                 _farm_cards_box.add_child(_make_farm_card(str(type)))
-        if lab_data.unlocked_mutants.is_empty():
+        if pets.is_empty():
                 var empty3 := Label.new()
                 empty3.text = Loc.t("farm.empty")
                 _farm_cards_box.add_child(empty3)
+        if _farm_filter_count:
+                _farm_filter_count.text = "ПИТОМЦЕВ: %d/%d" % [pets.size(), lab_data.unlocked_mutants.size()]
 
         _rebuild_farm_altar()
 

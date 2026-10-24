@@ -12,8 +12,8 @@ config_version=5
 [application]
 
 config/name="StalkerRevert"
-config/version="0.24.0"
-config/version_stamp="v0.24.0 · «ПОРЯДОК СИЛЫ» · 23.10.26"
+config/version="0.25.0"
+config/version_stamp="v0.25.0 · «СТАДНЫЙ ИНСТИНКТ» · 24.10.26"
 run/main_scene="res://scenes/ui/main_menu.tscn"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
@@ -35,6 +35,11 @@ window/size/viewport_height=1080
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 window/handheld/orientation=4
+
+[input_devices]
+
+pointing/emulate_touch_from_mouse=false
+pointing/emulate_mouse_from_touch=true
 
 [input]
 
