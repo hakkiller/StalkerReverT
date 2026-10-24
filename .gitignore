@@ -9,3 +9,4 @@ android/.gradle/
 # System junk
 .DS_Store
 *.tmp
+*.bak0280

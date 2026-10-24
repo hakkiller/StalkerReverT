@@ -20,6 +20,9 @@ signal stalker_died(stalker: Node, biomass_returned: float)
 @export var spawn_radius: float = 120.0
 @export var min_spawn_distance: float = 70.0
 
+# События Зоны (v0.28.0): добавка сталкеров к каждой волне
+var crowd_bonus: int = 0
+
 # Сцены сталкеров
 var stalker_scenes: Dictionary = {
 	"novice": null,
@@ -244,6 +247,9 @@ func _spawn_reward_mutants():
 
 func _calculate_stalker_count() -> int:
 	var base = randi_range(min_stalkers_per_wave, max_stalkers_per_wave)
+	if crowd_bonus != 0:
+		base += crowd_bonus
+	base = maxi(base, 1)
 	return ceil(base * _difficulty)
 
 

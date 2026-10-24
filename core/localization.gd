@@ -586,6 +586,22 @@ const STRINGS := {
         "brf.brk": {"ru": "Прорыв. Волна плотнее, статы злее - зато добыча на половину вперёд.", "en": "A Breakthrough. The wave is denser, the stats meaner - but the loot runs half ahead."},
         "brf.kpr": {"ru": "Хранитель. Десятый этаж держит свой. Награда тройная, и он это знает.", "en": "A Keeper. The tenth floor holds its own. The reward is tripled, and it knows."},
         "brf.srv": {"ru": "Выживание. Зона не кончится сама - кончишь ты. Волны бесконечны, рекорд твой.", "en": "Survival. The Zone will not end by itself - you will. Waves are endless, the record is yours."},
+
+        # ==== События Зоны и торговец (v0.28.0) ====
+        "run_ev.title": {"ru": "СОБЫТИЕ ЗОНЫ", "en": "ZONE EVENT"},
+        "run_ev.choose": {"ru": "Выбери одно", "en": "Choose one"},
+        "run_ev.pick": {"ru": "ВЫБРАТЬ", "en": "CHOOSE"},
+        "run_ev.safe": {"ru": "БЕЗОПАСНО", "en": "SAFE"},
+        "run_ev.risk": {"ru": "РИСК", "en": "RISK"},
+        "run_ev.outcome": {"ru": "ИТОГ", "en": "OUTCOME"},
+        "trader.button": {"ru": "ТОРГОВЕЦ", "en": "TRADER"},
+        "trader.title": {"ru": "СЕДОЙ - ТОРГОВЕЦ", "en": "GREYBEARD - TRADER"},
+        "trader.note": {"ru": "Товар только на этот забег", "en": "Stock lasts this run only"},
+        "trader.buy": {"ru": "КУПИТЬ", "en": "BUY"},
+        "trader.sold": {"ru": "ПРОДАНО", "en": "SOLD"},
+        "trader.no_money": {"ru": "Не хватает биомассы!", "en": "Not enough biomass!"},
+        "trader.bought": {"ru": "Куплено: {name}", "en": "Bought: {name}"},
+        "trader.close": {"ru": "ЗАКРЫТЬ", "en": "CLOSE"},
 }
 
 # Имена типов коллекции: ru - из GachaData.DISPLAY_NAMES, en - из DISPLAY_NAMES_EN

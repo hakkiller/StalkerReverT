@@ -62,6 +62,9 @@ var is_prep_phase: bool = true
 # тап по земле (Signals.ground_tapped) ставит выбранное в точку
 var _pending_placement: String = ""
 
+# Поп-апы забега (события Зоны / торговец) - канвас-слой над HUD
+var run_popups: RunPopups
+
 
 func _ready():
                 pass # print("ZoneController: инициализация...")
@@ -100,6 +103,11 @@ func _ready():
                                 sm.play_music("run")
 
                 is_initialized = true
+
+                # Поп-апы забега (события Зоны / торговец) - канвас-слой над HUD
+                run_popups = RunPopups.new()
+                add_child(run_popups)
+                run_popups.modal_closed.connect(_on_run_popup_closed)
                 pass # print("ZoneController: готов!")
 
 
@@ -172,6 +180,7 @@ func start_run():
 
 func _on_wave_break_started(wave_number: int, break_duration: float):
                 wave_break_started.emit(wave_number, break_duration)
+                _maybe_trigger_run_event(wave_number, break_duration)
 
 
 func _on_all_waves_cleared():
@@ -198,6 +207,8 @@ func _connect_to_hud():
                                 hud.mutant_requested.connect(_on_hud_mutant_requested)
                                 if hud.has_signal("start_run_requested"):
                                                 hud.start_run_requested.connect(start_run)
+                                if hud.has_signal("trader_requested"):
+                                                hud.trader_requested.connect(_open_trader)
                                 pass # print("ZoneController: HUD подключен")
                 else:
                                 pass # print("ZoneController: HUD не найден после ", max_attempts, " попыток")
@@ -398,6 +409,15 @@ func _initialize_run():
 
                 _gacha_rewards_log.clear()
                 _trophy_artifacts.clear()
+                _trader_sold.clear()
+                _event_reward_mult = 1.0
+                _event_biomass_flat = 0.0
+                _event_harvest_mult = 1.0
+                _event_regen_saved = -1.0
+                _break_index = 0
+                _last_event_id = ""
+                if spawn_manager:
+                                spawn_manager.crowd_bonus = 0
                 # Фаза подготовки: спавн сталкеров начнётся по кнопке СТАРТ в HUD
                 # (лог отключён)
                 if run_params.has("campaign_params"):
@@ -703,6 +723,12 @@ func _on_wave_started(wave_number: int, count: int):
 func _on_wave_ended(wave_number: int, survivors: int):
                 wave_ended.emit(wave_number, survivors)
                 Signals.wave_ended.emit(wave_number, survivors, spawn_manager.get_stalker_count())
+
+                # Одноразовые бонусы событий Зоны действуют до конца волны
+                _event_harvest_mult = 1.0
+                if _event_regen_saved >= 0.0 and resource_manager:
+                                resource_manager.energy_regen_rate = _event_regen_saved
+                                _event_regen_saved = -1.0
 
                 pass # print("Волна " + str(wave_number) + " закончилась, выжило: " + str(survivors))
 
@@ -1088,8 +1114,8 @@ func register_stalker(_stalker: Node):
 # Прямой метод для добавления биомассы при смерти сталкера
 func on_stalker_died(stalker: Node, biomass_returned: float):
                 if resource_manager:
-                                # ЖАТВА: множитель добычи за убийство (модификатор волны легенд)
-                                resource_manager.add_biomass(biomass_returned * _harvest_mult)
+                                # ЖАТВА: множитель добычи за убийство (волна легенд x события Зоны)
+                                resource_manager.add_biomass(biomass_returned * _harvest_mult * _event_harvest_mult)
                                 # (лог отключён)
 
                 progression_manager.record_stalker_killed()
@@ -1135,6 +1161,197 @@ func get_status() -> Dictionary:
                                 "anomalies": anomaly_manager.get_anomaly_count() if anomaly_manager else 0,
                                 "artifacts": anomaly_manager.get_artifact_count() if anomaly_manager else 0
                 }
+
+
+# ==================== СОБЫТИЯ ЗОНЫ И ТОРГОВЕЦ (v0.28.0) ====================
+
+var _break_index: int = 0
+var _last_event_id: String = ""
+var _event_reward_mult: float = 1.0
+var _event_biomass_flat: float = 0.0
+var _event_harvest_mult: float = 1.0
+var _event_regen_saved: float = -1.0
+var _trader_sold: Dictionary = {}
+var _run_popup_busy: bool = false
+
+
+func _on_run_popup_closed():
+                _run_popup_busy = false
+
+
+## Передышка: иногда прерываем событием Зоны (выбор 1 из 2)
+func _maybe_trigger_run_event(wave_number: int, break_duration: float) -> void:
+                if is_run_finished or run_popups == null:
+                                return
+                if break_duration < 6.0:
+                                return
+                # Перед волной-событием выживания не выступаем: у фракций свой сценарий
+                if ZoneEvents.is_event_wave(wave_number + 1):
+                                return
+                _break_index += 1
+                var due: bool = _break_index == 2 or (_break_index > 2 and (_break_index - 2) % 3 == 0)
+                if not due and randf() > 0.2:
+                                return
+                await get_tree().create_timer(1.2).timeout
+                if is_run_finished or not is_inside_tree() or _run_popup_busy:
+                                return
+                var ev: Dictionary = RunEventsData.pick_event(_last_event_id)
+                if ev.is_empty():
+                                return
+                _last_event_id = str(ev.get("id", ""))
+                _run_popup_busy = true
+                run_popups.show_event(ev, _make_event_choice_cb(ev))
+
+
+func _make_event_choice_cb(ev: Dictionary) -> Callable:
+                return func(option_index: int) -> String:
+                                return _apply_run_event(ev, int(option_index))
+
+
+func _apply_run_event(ev: Dictionary, option_index: int) -> String:
+                var options: Array = ev.get("options", [])
+                if option_index < 0 or option_index >= options.size():
+                                return ""
+                var opt: Dictionary = options[option_index]
+                var res_key := "result_ru" if Loc.lang == "ru" else "result_en"
+                var res: String = str(opt.get(res_key, ""))
+                _apply_run_effect(opt.get("effect", {}))
+                return res
+
+
+## Применение словаря эффектов (события Зоны и товары торговца)
+func _apply_run_effect(effect: Dictionary) -> void:
+                if effect.is_empty():
+                                return
+                if effect.has("biomass_now"):
+                                add_biomass(float(effect["biomass_now"]))
+                if effect.has("energy_now"):
+                                add_energy(float(effect["energy_now"]))
+                if effect.has("reward_mult"):
+                                _event_reward_mult *= float(effect["reward_mult"])
+                if effect.has("bonus_flat"):
+                                _event_biomass_flat += float(effect["bonus_flat"])
+                if effect.has("crowd_next") and spawn_manager:
+                                spawn_manager.crowd_bonus += int(effect["crowd_next"])
+                if effect.has("harvest_next"):
+                                _event_harvest_mult = float(effect["harvest_next"])
+                if effect.has("regen_next") and resource_manager:
+                                _event_regen_saved = resource_manager.energy_regen_rate
+                                resource_manager.energy_regen_rate = _event_regen_saved * float(effect["regen_next"])
+                if effect.has("heal_all") and spawn_manager:
+                                for m in spawn_manager.get_active_mutants():
+                                                if is_instance_valid(m) and m.get("health_component"):
+                                                                m.health_component.heal(m.health_component.get_max_health())
+                if effect.has("hp_buff") and spawn_manager:
+                                spawn_manager.set_campaign_scaling(
+                                                spawn_manager.campaign_hp_mult * float(effect["hp_buff"]),
+                                                spawn_manager.campaign_damage_mult,
+                                                spawn_manager.campaign_speed_mult)
+                if effect.has("dmg_buff") and spawn_manager:
+                                spawn_manager.set_campaign_scaling(
+                                                spawn_manager.campaign_hp_mult,
+                                                spawn_manager.campaign_damage_mult * float(effect["dmg_buff"]),
+                                                spawn_manager.campaign_speed_mult)
+                if effect.has("cost_mult") and spawn_manager:
+                                spawn_manager.set_cost_multiplier(spawn_manager.cost_multiplier * float(effect["cost_mult"]))
+                if effect.has("reward_mutant") and spawn_manager:
+                                spawn_manager.queue_reward_mutant(str(effect["reward_mutant"]))
+                if effect.has("artifact"):
+                                _grant_event_artifact(str(effect["artifact"]))
+                if effect.has("rolls") or effect.has("anomaly_rolls"):
+                                var gm = get_tree().get_first_node_in_group("game_manager")
+                                if gm:
+                                                if effect.has("rolls"):
+                                                                gm.grant_mutant_rolls(int(effect["rolls"]), "событие Зоны")
+                                                if effect.has("anomaly_rolls"):
+                                                                gm.grant_anomaly_rolls(int(effect["anomaly_rolls"]), "событие Зоны")
+                if effect.has("storm_free"):
+                                _spawn_storm_anomalies(int(effect["storm_free"]))
+
+
+## Случайный артефакт события/торговца: спавн у Монолита + коллекция
+func _grant_event_artifact(kind: String) -> void:
+                var pool: Array = GachaData.ARTIFACT_POOL.get("common", [])
+                if randf() < 0.3:
+                                var rare: Array = GachaData.ARTIFACT_POOL.get("rare", [])
+                                if not rare.is_empty():
+                                                pool = rare
+                if pool.is_empty():
+                                return
+                var atype: String = str(pool[randi() % pool.size()])
+                _grant_artifact_reward(atype, "событие Зоны")
+                var gm = get_tree().get_first_node_in_group("game_manager")
+                if gm and gm.has_method("grant_artifact_reward"):
+                                gm.grant_artifact_reward(atype)
+
+
+## Шторм: N бесплатных аномалий возле Монолита
+func _spawn_storm_anomalies(count: int) -> void:
+                if not anomaly_manager:
+                                return
+                var mono = get_tree().get_first_node_in_group("monolith")
+                var base: Vector3 = mono.global_position if mono else Vector3.ZERO
+                var types: Array = []
+                for t in RunEventsData.STORM_TYPES:
+                                if anomaly_manager.anomaly_scenes.has(t):
+                                                types.append(t)
+                if types.is_empty():
+                                return
+                for i in range(maxi(count, 1)):
+                                var ang: float = randf() * TAU
+                                var dist: float = randf_range(6.0, 15.0)
+                                var pos: Vector3 = base + Vector3(cos(ang) * dist, 0.0, sin(ang) * dist)
+                                anomaly_manager.create_anomaly(str(types[randi() % types.size()]), pos, 2, 0.0)
+
+
+# ==================== ТОРГОВЕЦ «СЕДОЙ» ====================
+
+func _open_trader() -> void:
+                if is_run_finished or run_popups == null or _run_popup_busy:
+                                return
+                _run_popup_busy = true
+                run_popups.show_shop(_trader_stock(), _trader_buy, get_biomass, _trader_stock)
+
+
+## Текущий товар Седого с ценами за текущую волну
+func _trader_stock() -> Array:
+                var wave: int = spawn_manager.current_wave if spawn_manager else 1
+                var ru: bool = Loc.lang == "ru"
+                var stock: Array = []
+                for item in RunEventsData.TRADER_ITEMS:
+                                var id: String = str(item.get("id", ""))
+                                var limit: int = int(item.get("stock", 1))
+                                stock.append({
+                                                "id": id,
+                                                "name": str(item.get("name_ru", "") if ru else item.get("name_en", "")),
+                                                "desc": str(item.get("desc_ru", "") if ru else item.get("desc_en", "")),
+                                                "cost": RunEventsData.trader_cost(item, wave),
+                                                "sold": int(_trader_sold.get(id, 0)) >= limit,
+                                })
+                return stock
+
+
+## Покупка: "" = отказ (не хватает/продано), иначе текст для вспышки
+func _trader_buy(item_id: String) -> String:
+                var item: Dictionary = {}
+                for it in RunEventsData.TRADER_ITEMS:
+                                if str(it.get("id", "")) == item_id:
+                                                item = it
+                                                break
+                if item.is_empty():
+                                return ""
+                var id: String = str(item.get("id", ""))
+                var limit: int = int(item.get("stock", 1))
+                if int(_trader_sold.get(id, 0)) >= limit:
+                                return ""
+                var wave: int = spawn_manager.current_wave if spawn_manager else 1
+                var cost: float = float(RunEventsData.trader_cost(item, wave))
+                if not spend_biomass(cost):
+                                return ""
+                _trader_sold[id] = int(_trader_sold.get(id, 0)) + 1
+                _apply_run_effect(item.get("effect", {}))
+                var ru: bool = Loc.lang == "ru"
+                return Loc.t("trader.bought", {"name": str(item.get("name_ru", "") if ru else item.get("name_en", ""))})
 
 
 # ==================== ЗАВЕРШЕНИЕ ЗАБЕГА ====================
@@ -1188,6 +1405,12 @@ func _collect_run_result(success: bool) -> Dictionary:
                                 if bool(run_params.get("campaign_replay", false)):
                                                 bonus *= CampaignData.REPLAY_REWARD_FACTOR
                                 reward += bonus
+
+                # События Зоны: плоский бонус и множитель итоговой награды
+                if _event_biomass_flat > 0.0:
+                                reward += _event_biomass_flat
+                if _event_reward_mult != 1.0:
+                                reward *= _event_reward_mult
 
                 # Выживание: награда за пройденные волны платится при любом исходе -
                 # смерть здесь ожидаемый конец забега, а не провал

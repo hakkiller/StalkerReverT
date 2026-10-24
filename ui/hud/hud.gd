@@ -6,6 +6,7 @@ signal anomaly_requested(anomaly_type: String)
 signal mutant_requested(mutant_type: String)
 signal emission_requested
 signal start_run_requested
+signal trader_requested
 
 @onready var energy_value: Label = $Resources/EnergyValue
 @onready var biomass_value: Label = $Resources/BiomassValue
@@ -82,6 +83,8 @@ var _announce_title: Label = null
 var _announce_desc: Label = null
 var _announce_tween: Tween = null
 var _announce_seq: int = 0
+# Кнопка торговца «Седой» (v0.28.0): видна в подготовке и на передышках
+var _trader_button: Button = null
 
 
 func _ready():
@@ -114,6 +117,8 @@ func _ready():
                 _rescale_battle_panels.call_deferred()
                 # Полевой набор: автосбор из открытых + визуал (после deferred ценников)
                 _loadout_init.call_deferred()
+                # Торговец забега: кнопка в свободном окне верха
+                _build_trader_button.call_deferred()
 
                 # print("HUD инициализирован")
 
@@ -131,6 +136,8 @@ func _apply_language_and_prices():
                 wave_label.text = Loc.t("hud.wave", {"n": 0})
                 emission_button.text = Loc.t("hud.emission")
                 start_run_button.text = Loc.t("hud.start")
+                if _trader_button:
+                                _trader_button.text = Loc.t("trader.button")
                 var anomaly_header: Label = get_node_or_null("AnomalyPanel/Header")
                 if anomaly_header:
                                 anomaly_header.text = Loc.t("hud.anomalies")
@@ -387,6 +394,11 @@ func _process(delta):
                                                 if stxt != _last_stalkers_text:
                                                                 _last_stalkers_text = stxt
                                                                 stalker_count_label.text = stxt
+
+                if _trader_button:
+                                var shop_available: bool = (start_panel.visible or _break_time_left > 0.0) and not is_emission_active
+                                if _trader_button.visible != shop_available:
+                                                _trader_button.visible = shop_available
 
 
 func _on_energy_changed(current: float, max_val: float):
@@ -777,6 +789,38 @@ func _on_note_expired(desc: String = ""):
 ## Золотое объявление награды (гача/вехи/события) — крупно по центру
 func show_reward_note(text: String):
                 _announce("НАГРАДА", text, Color(1.0, 0.85, 0.2), 2.6)
+
+# ==================== ТОРГОВЕЦ ЗАБЕГА (v0.28.0) ====================
+
+func _build_trader_button() -> void:
+                if is_instance_valid(_trader_button):
+                                return
+                _trader_button = Button.new()
+                _trader_button.name = "TraderButton"
+                _trader_button.text = Loc.t("trader.button")
+                # Свободное окно верха: после панелей аномалий (до x=864), до баннера (x=1118)
+                _trader_button.position = Vector2(926, 10)
+                _trader_button.size = Vector2(180, 46)
+                _trader_button.focus_mode = Control.FOCUS_NONE
+                _trader_button.add_theme_font_override("font", BunkerUI.font_title())
+                _trader_button.add_theme_font_size_override("font_size", 16)
+                _trader_button.add_theme_color_override("font_color", Color("ffd94d"))
+                _trader_button.add_theme_color_override("font_hover_color", Color(1, 1, 1))
+                var sb := StyleBoxFlat.new()
+                sb.bg_color = Color(0.09, 0.085, 0.06)
+                sb.border_color = Color("ffd94d")
+                sb.set_border_width_all(2)
+                sb.set_corner_radius_all(8)
+                _trader_button.add_theme_stylebox_override("normal", sb)
+                var sbh := sb.duplicate()
+                sbh.bg_color = Color(0.16, 0.14, 0.07)
+                _trader_button.add_theme_stylebox_override("hover", sbh)
+                _trader_button.add_theme_stylebox_override("pressed", sbh)
+                _trader_button.pressed.connect(func():
+                                _play_click_sound()
+                                trader_requested.emit())
+                add_child(_trader_button)
+                _trader_button.visible = false
 
 
 # ==================== ЦЕНТРАЛЬНЫЙ БАННЕР ОБЪЯВЛЕНИЙ (стиль БУНКЕР) ====================
