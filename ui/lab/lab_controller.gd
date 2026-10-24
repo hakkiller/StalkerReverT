@@ -98,7 +98,9 @@ func _ready():
         _build_gallery_ui()
         _build_profile_ui()
         _build_language_button()
+        _build_tasks_widget()
         _build_tasks_ui()
+        _build_calendar_popup()
         _build_arena_ui()
         _build_gates_ui()
         _apply_bunker_style()
@@ -111,6 +113,13 @@ func _ready():
         Prog.task_completed.connect(_on_prog_task_done)
         Prog.level_up.connect(_on_prog_level_up)
         _prog_late_story()
+
+        # Виджет задач + календарь входа (v0.26.0)
+        Prog.tasks_changed.connect(_tw_refresh)
+        Prog.track_changed.connect(_tw_refresh)
+        Prog.calendar_changed.connect(_tw_refresh)
+        _tw_intro.call_deferred()
+        _maybe_calendar_popup.call_deferred()
 
         # print("lab_controller: initialized, GameManager найден: ", game_manager != null)
 
@@ -1587,6 +1596,7 @@ func _on_farm_card_selected(type: String):
 
 func _process(delta: float) -> void:
         """Инерция свайпа фермы: палец отпущен — список едет и плавно тормозит."""
+        _tw_tick(delta)
         if _swipe_inertias.is_empty():
                 return
         for sc in _swipe_inertias.keys():
@@ -5075,3 +5085,567 @@ func _prog_late_story():
 
 func _on_prog_level_up(lvl: int):
         _show_message("НОВЫЙ УРОВЕНЬ ЛАБОРАНТА: %d" % lvl, 2.6)
+
+
+# ==================== ВИДЖЕТ ЗАДАЧ (главный экран) + КАЛЕНДАРЬ ВХОДА ====================
+## Язычок у правого края + выдвижная панель: две дневные задачи, сводка недели,
+## трек сундуков и календарь входа. Пульсирует, когда есть что забрать.
+
+var _tw_root: Control = null
+var _tw_tab: Button = null
+var _tw_dot: Panel = null
+var _tw_panel: Panel = null
+var _tw_today_head: Label = null
+var _tw_rows_box: VBoxContainer = null
+var _tw_rows: Array = []
+var _tw_week_label: Label = null
+var _tw_track_btn: Button = null
+var _tw_open := false
+var _tw_anim: Tween = null
+var _tw_pulse_t := 0.0
+
+var _cal_root: Control = null
+var _cal_sub: Label = null
+var _cal_tiles: Array = []
+var _cal_claim_btn: Button = null
+var _cal_today_tile_ref: Dictionary = {}
+
+
+func _build_tasks_widget():
+        if _tw_root != null:
+                return
+        _tw_root = Control.new()
+        _tw_root.name = "TasksWidget"
+        _tw_root.set_anchors_preset(Control.PRESET_FULL_RECT)
+        _tw_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+        add_child(_tw_root)
+
+        # --- язычок у правого края (интро: выезд справа) ---
+        _tw_tab = Button.new()
+        _tw_tab.text = Loc.t("tw.tab")
+        _tw_tab.add_theme_font_override("font", BunkerUI.font_title())
+        _tw_tab.add_theme_font_size_override("font_size", 15)
+        _tw_tab.anchor_left = 1.0
+        _tw_tab.anchor_right = 1.0
+        _tw_tab.anchor_top = 0.24
+        _tw_tab.anchor_bottom = 0.60
+        _tw_tab.offset_left = 70.0
+        _tw_tab.offset_right = 128.0
+        _tw_tab.modulate = Color(1, 1, 1, 0)
+        _tw_tab.mouse_entered.connect(_play_hover_sound)
+        _tw_tab.pressed.connect(func(): _tw_set_open(true))
+        _tw_root.add_child(_tw_tab)
+
+        # точка-уведомление: есть что забрать
+        _tw_dot = Panel.new()
+        _tw_dot.anchor_left = 1.0
+        _tw_dot.anchor_right = 1.0
+        _tw_dot.offset_left = -26.0
+        _tw_dot.offset_right = -8.0
+        _tw_dot.offset_top = -8.0
+        _tw_dot.offset_bottom = 10.0
+        var dsb := StyleBoxFlat.new()
+        dsb.bg_color = BunkerUI.HAZARD_BRIGHT
+        dsb.set_corner_radius_all(9)
+        dsb.border_color = Color(0, 0, 0, 0.6)
+        dsb.set_border_width_all(2)
+        _tw_dot.add_theme_stylebox_override("panel", dsb)
+        _tw_dot.pivot_offset = Vector2(9, 9)
+        _tw_dot.visible = false
+        _tw_tab.add_child(_tw_dot)
+
+        # --- выдвижная панель ---
+        _tw_panel = Panel.new()
+        _tw_panel.anchor_left = 1.0
+        _tw_panel.anchor_right = 1.0
+        _tw_panel.anchor_top = 0.0
+        _tw_panel.anchor_bottom = 1.0
+        _tw_panel.offset_left = 40.0
+        _tw_panel.offset_right = 540.0
+        _tw_panel.offset_top = 92.0
+        _tw_panel.offset_bottom = -92.0
+        var psb := StyleBoxFlat.new()
+        psb.bg_color = Color(0.031, 0.045, 0.026, 0.985)
+        psb.border_color = BunkerUI.GREEN
+        psb.set_border_width_all(2)
+        psb.set_corner_radius_all(12)
+        psb.shadow_color = Color(0, 0, 0, 0.5)
+        psb.shadow_size = 18
+        _tw_panel.add_theme_stylebox_override("panel", psb)
+        _tw_panel.visible = false
+        _tw_root.add_child(_tw_panel)
+
+        var marg := MarginContainer.new()
+        marg.set_anchors_preset(Control.PRESET_FULL_RECT)
+        marg.add_theme_constant_override("margin_left", 16)
+        marg.add_theme_constant_override("margin_right", 16)
+        marg.add_theme_constant_override("margin_top", 12)
+        marg.add_theme_constant_override("margin_bottom", 12)
+        _tw_panel.add_child(marg)
+        var v := VBoxContainer.new()
+        v.add_theme_constant_override("separation", 8)
+        marg.add_child(v)
+
+        var head := HBoxContainer.new()
+        head.add_theme_constant_override("separation", 10)
+        v.add_child(head)
+        var hl := Label.new()
+        hl.text = Loc.t("tw.head")
+        hl.add_theme_font_override("font", BunkerUI.font_title())
+        hl.add_theme_font_size_override("font_size", 21)
+        hl.add_theme_color_override("font_color", BunkerUI.GREEN)
+        head.add_child(hl)
+        var hsp := Control.new()
+        hsp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        head.add_child(hsp)
+        _tw_today_head = BunkerUI.make_mono_label("", 12, BunkerUI.TEXT_DIM)
+        head.add_child(_tw_today_head)
+        var close := Button.new()
+        close.text = Loc.t("tw.close")
+        close.custom_minimum_size = Vector2(42, 42)
+        BunkerUI.style_button(close, "steel", 16)
+        close.pressed.connect(func(): _tw_set_open(false))
+        head.add_child(close)
+
+        var sec := BunkerUI.make_mono_label(Loc.t("tw.today"), 12, BunkerUI.TEXT_FAINT)
+        v.add_child(sec)
+
+        _tw_rows_box = VBoxContainer.new()
+        _tw_rows_box.add_theme_constant_override("separation", 8)
+        v.add_child(_tw_rows_box)
+        for i in range(2):
+                _tw_rows.append(_tw_make_task_row())
+
+        _tw_week_label = BunkerUI.make_mono_label("", 12, BunkerUI.TEXT_DIM)
+        _tw_week_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+        v.add_child(_tw_week_label)
+
+        var spacer := Control.new()
+        spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+        v.add_child(spacer)
+
+        var line := ColorRect.new()
+        line.custom_minimum_size = Vector2(0, 1)
+        line.color = BunkerUI.STEEL_EDGE
+        v.add_child(line)
+
+        _tw_track_btn = Button.new()
+        _tw_track_btn.custom_minimum_size = Vector2(0, 46)
+        _tw_track_btn.add_theme_font_override("font", BunkerUI.font_body())
+        _tw_track_btn.add_theme_font_size_override("font_size", 14)
+        BunkerUI.style_button(_tw_track_btn, "steel", 14)
+        _tw_track_btn.mouse_entered.connect(_play_hover_sound)
+        _tw_track_btn.pressed.connect(func():
+                _tw_set_open(false)
+                _on_tasks_pressed())
+        v.add_child(_tw_track_btn)
+
+        var cal_btn := Button.new()
+        cal_btn.text = Loc.t("tw.calendar")
+        cal_btn.custom_minimum_size = Vector2(0, 52)
+        BunkerUI.style_button(cal_btn, "primary", 15)
+        cal_btn.mouse_entered.connect(_play_hover_sound)
+        cal_btn.pressed.connect(_cal_open)
+        v.add_child(cal_btn)
+
+
+func _tw_make_task_row() -> Dictionary:
+        var p := PanelContainer.new()
+        var sb := StyleBoxFlat.new()
+        sb.bg_color = Color(0.07, 0.10, 0.055, 0.9)
+        sb.border_color = BunkerUI.STEEL_EDGE
+        sb.set_border_width_all(1)
+        sb.set_corner_radius_all(8)
+        sb.content_margin_left = 10.0
+        sb.content_margin_right = 10.0
+        sb.content_margin_top = 7.0
+        sb.content_margin_bottom = 7.0
+        p.add_theme_stylebox_override("panel", sb)
+        _tw_rows_box.add_child(p)
+        var vv := VBoxContainer.new()
+        vv.add_theme_constant_override("separation", 5)
+        p.add_child(vv)
+        var title := Label.new()
+        title.add_theme_font_override("font", BunkerUI.font_body())
+        title.add_theme_font_size_override("font_size", 14)
+        title.add_theme_color_override("font_color", BunkerUI.TEXT_LIGHT)
+        title.clip_text = true
+        vv.add_child(title)
+        var h := HBoxContainer.new()
+        h.add_theme_constant_override("separation", 8)
+        vv.add_child(h)
+        var bar := ProgressBar.new()
+        bar.custom_minimum_size = Vector2(0, 12)
+        bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+        bar.show_percentage = false
+        bar.add_theme_stylebox_override("background", _tasks_bar_bg())
+        bar.add_theme_stylebox_override("fill", _tasks_bar_fill(BunkerUI.GREEN))
+        h.add_child(bar)
+        var rew := BunkerUI.make_mono_label("", 11, BunkerUI.TEXT_FAINT)
+        rew.custom_minimum_size = Vector2(104, 0)
+        rew.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+        rew.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+        h.add_child(rew)
+        var claim := Button.new()
+        claim.text = Loc.t("tw.claim")
+        claim.custom_minimum_size = Vector2(118, 36)
+        claim.pivot_offset = Vector2(59, 18)
+        BunkerUI.style_button(claim, "primary", 13)
+        claim.visible = false
+        h.add_child(claim)
+        var refs := {"panel": p, "title": title, "bar": bar, "rew": rew, "claim": claim, "id": ""}
+        claim.pressed.connect(func(): _tw_claim_row(refs))
+        return refs
+
+
+func _tw_claim_row(refs: Dictionary) -> void:
+        _play_click_sound()
+        Prog.claim_task("d", str(refs["id"]))
+
+
+## Свежие 2 дневные задачи: сначала «готово к забору», затем по заполненности
+func _tw_refresh(_x = null) -> void:
+        if _tw_root == null or lab_data == null:
+                return
+        var dt: Array = Prog.daily_tasks()
+        var arr: Array = dt.duplicate()
+        arr.sort_custom(func(a, b):
+                var ca: bool = bool(a["done"]) and not bool(a["claimed"])
+                var cb: bool = bool(b["done"]) and not bool(b["claimed"])
+                if ca != cb:
+                        return ca
+                var ra: float = float(a["prog"]) / float(maxi(1, int(a["def"]["need"])))
+                var rb: float = float(b["prog"]) / float(maxi(1, int(b["def"]["need"])))
+                return ra > rb)
+        var claimed_n := 0
+        var claimable := false
+        for t in dt:
+                if bool(t["claimed"]):
+                        claimed_n += 1
+                elif bool(t["done"]):
+                        claimable = true
+        _tw_today_head.text = "%d/%d" % [claimed_n, dt.size()]
+        for i in range(_tw_rows.size()):
+                var r: Dictionary = _tw_rows[i]
+                if i >= arr.size():
+                        (r["panel"] as Control).visible = false
+                        continue
+                (r["panel"] as Control).visible = true
+                var t: Dictionary = arr[i]
+                r["id"] = str(t["def"]["id"])
+                var done: bool = bool(t["done"])
+                var claimed: bool = bool(t["claimed"])
+                (r["title"] as Label).text = str(t["def"]["title"])
+                (r["title"] as Label).add_theme_color_override("font_color",
+                        BunkerUI.TEXT_FAINT if claimed else BunkerUI.TEXT_LIGHT)
+                (r["rew"] as Label).text = Loc.t("tw.reward", {"xp": int(t["def"]["xp"]), "pts": int(t["def"]["pts"])})
+                var bar: ProgressBar = r["bar"]
+                bar.max_value = maxi(1, int(t["def"]["need"]))
+                var target := float(mini(int(t["prog"]), int(t["def"]["need"])))
+                if done:
+                        target = float(int(t["def"]["need"]))
+                var tw := create_tween()
+                tw.tween_property(bar, "value", target, 0.45).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+                (r["claim"] as Button).visible = done and not claimed
+        var wt: Array = Prog.weekly_tasks()
+        var wdone := 0
+        for t in wt:
+                if bool(t["claimed"]):
+                        wdone += 1
+        _tw_week_label.text = Loc.t("tw.week", {"done": wdone, "total": wt.size()})
+        var ready := 0
+        var next_tier := 0
+        for i in range(1, Prog.TRACK_TIERS + 1):
+                if Prog.tier_claimed(i):
+                        continue
+                if Prog.track_points() >= i * Prog.TIER_COST:
+                        ready += 1
+                elif next_tier == 0:
+                        next_tier = i
+        if ready > 0:
+                _tw_track_btn.text = "● " + Loc.t("tw.track_ready", {"n": ready})
+                _tw_track_btn.add_theme_color_override("font_color", BunkerUI.HAZARD_BRIGHT)
+        else:
+                _tw_track_btn.text = Loc.t("tw.track_next", {"n": next_tier, "pts": Prog.track_points(), "need": next_tier * Prog.TIER_COST})
+                _tw_track_btn.add_theme_color_override("font_color", BunkerUI.TEXT_LIGHT)
+        _tw_dot.visible = claimable or ready > 0 or bool(Prog.calendar_info()["available"])
+
+
+func _tw_set_open(v: bool) -> void:
+        if _tw_open == v:
+                return
+        _tw_open = v
+        _play_click_sound()
+        if _tw_anim and _tw_anim.is_valid():
+                _tw_anim.kill()
+        _tw_panel.visible = true
+        _tw_tab.mouse_filter = Control.MOUSE_FILTER_IGNORE if v else Control.MOUSE_FILTER_STOP
+        var l_target := -496.0 if v else 40.0
+        var r_target := -10.0 if v else 540.0
+        _tw_anim = create_tween().set_parallel(true)
+        _tw_anim.tween_property(_tw_panel, "offset_left", l_target, 0.38).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+        _tw_anim.tween_property(_tw_panel, "offset_right", r_target, 0.38).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+        _tw_anim.tween_property(_tw_tab, "modulate:a", 0.0 if v else 1.0, 0.22)
+        if v:
+                _tw_refresh()
+
+
+func _tw_intro() -> void:
+        if _tw_tab == null:
+                return
+        var tw := create_tween().set_parallel(true)
+        tw.tween_property(_tw_tab, "offset_left", -58.0, 0.55).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+        tw.tween_property(_tw_tab, "offset_right", 0.0, 0.55).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+        tw.tween_property(_tw_tab, "modulate:a", 1.0, 0.4)
+        tw.chain().tween_callback(_tw_refresh)
+
+
+## Пульсации (вызывается из _process): точка, кнопки ЗАБРАТЬ, плитка «сегодня»
+func _tw_tick(delta: float) -> void:
+        if _tw_root == null:
+                return
+        var busy := false
+        for p_v in [shop_panel, star_panel, farm_panel, gacha_panel, gallery_panel, detail_panel, up_panel, arena_panel, defense_panel, gates_panel, tasks_panel]:
+                if p_v != null and (p_v as Control).visible:
+                        busy = true
+        var res_panel := get_node_or_null("ResultPanel")
+        if res_panel != null and (res_panel as Control).visible:
+                busy = true
+        _tw_root.visible = not busy
+        if not _tw_root.visible:
+                return
+        _tw_pulse_t += delta
+        if _tw_dot != null and _tw_dot.visible and not _tw_open:
+                var s := 1.0 + 0.25 * sin(_tw_pulse_t * 5.2)
+                _tw_dot.scale = Vector2(s, s)
+                _tw_tab.self_modulate = Color(1, 1, 1, 0.8 + 0.2 * (0.5 + 0.5 * sin(_tw_pulse_t * 3.6)))
+        for r_v in _tw_rows:
+                var r: Dictionary = r_v
+                var b: Button = r["claim"]
+                if b.visible:
+                        b.self_modulate = Color(1, 1, 1, 0.78 + 0.22 * (0.5 + 0.5 * sin(_tw_pulse_t * 4.2)))
+        if _cal_root != null and _cal_root.visible:
+                if _cal_claim_btn.visible:
+                        var s2 := 1.0 + 0.03 * sin(_tw_pulse_t * 5.0)
+                        _cal_claim_btn.scale = Vector2(s2, s2)
+                if not _cal_today_tile_ref.is_empty():
+                        var pn: Panel = _cal_today_tile_ref["panel"]
+                        pn.self_modulate = Color(1, 1, 1, 0.82 + 0.18 * (0.5 + 0.5 * sin(_tw_pulse_t * 4.0)))
+
+
+# ---------- КАЛЕНДАРЬ ВХОДА: поп-ап ----------
+
+func _build_calendar_popup():
+        if _cal_root != null:
+                return
+        _cal_root = Control.new()
+        _cal_root.name = "CalendarPopup"
+        _cal_root.set_anchors_preset(Control.PRESET_FULL_RECT)
+        _cal_root.mouse_filter = Control.MOUSE_FILTER_STOP
+        _cal_root.visible = false
+        add_child(_cal_root)
+
+        var dim := ColorRect.new()
+        dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+        dim.color = Color(0, 0, 0, 0.78)
+        dim.mouse_filter = Control.MOUSE_FILTER_STOP
+        dim.gui_input.connect(func(ev: InputEvent):
+                if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
+                        _cal_close())
+        _cal_root.add_child(dim)
+
+        var panel := Panel.new()
+        panel.anchor_left = 0.5
+        panel.anchor_right = 0.5
+        panel.anchor_top = 0.5
+        panel.anchor_bottom = 0.5
+        panel.offset_left = -452.0
+        panel.offset_right = 452.0
+        panel.offset_top = -248.0
+        panel.offset_bottom = 248.0
+        var sb := StyleBoxFlat.new()
+        sb.bg_color = Color(0.031, 0.045, 0.026, 0.995)
+        sb.border_color = BunkerUI.GREEN
+        sb.set_border_width_all(2)
+        sb.set_corner_radius_all(12)
+        sb.shadow_color = Color(0, 0, 0, 0.55)
+        sb.shadow_size = 22
+        panel.add_theme_stylebox_override("panel", sb)
+        _cal_root.add_child(panel)
+
+        var marg := MarginContainer.new()
+        marg.set_anchors_preset(Control.PRESET_FULL_RECT)
+        marg.add_theme_constant_override("margin_left", 20)
+        marg.add_theme_constant_override("margin_right", 20)
+        marg.add_theme_constant_override("margin_top", 16)
+        marg.add_theme_constant_override("margin_bottom", 16)
+        panel.add_child(marg)
+        var v := VBoxContainer.new()
+        v.add_theme_constant_override("separation", 10)
+        marg.add_child(v)
+
+        var title := Label.new()
+        title.text = Loc.t("cal.title")
+        title.add_theme_font_override("font", BunkerUI.font_title())
+        title.add_theme_font_size_override("font_size", 27)
+        title.add_theme_color_override("font_color", BunkerUI.GREEN)
+        title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+        v.add_child(title)
+
+        _cal_sub = BunkerUI.make_mono_label("", 13, BunkerUI.TEXT_DIM)
+        _cal_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+        v.add_child(_cal_sub)
+
+        var row := HBoxContainer.new()
+        row.add_theme_constant_override("separation", 10)
+        row.size_flags_vertical = Control.SIZE_EXPAND_FILL
+        v.add_child(row)
+        for i in range(1, 8):
+                var tile := _cal_make_tile(i)
+                row.add_child(tile["panel"])
+                _cal_tiles.append(tile)
+
+        var note := BunkerUI.make_mono_label(Loc.t("cal.note"), 12, BunkerUI.TEXT_FAINT)
+        note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+        note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+        v.add_child(note)
+
+        var btns := HBoxContainer.new()
+        btns.add_theme_constant_override("separation", 14)
+        btns.alignment = BoxContainer.ALIGNMENT_CENTER
+        v.add_child(btns)
+        _cal_claim_btn = Button.new()
+        _cal_claim_btn.text = Loc.t("cal.claim")
+        _cal_claim_btn.custom_minimum_size = Vector2(320, 58)
+        _cal_claim_btn.pivot_offset = Vector2(160, 29)
+        BunkerUI.style_button(_cal_claim_btn, "primary", 17)
+        _cal_claim_btn.pressed.connect(_cal_claim)
+        btns.add_child(_cal_claim_btn)
+        var cb := Button.new()
+        cb.text = Loc.t("cal.close")
+        cb.custom_minimum_size = Vector2(180, 58)
+        BunkerUI.style_button(cb, "steel", 16)
+        cb.pressed.connect(_cal_close)
+        btns.add_child(cb)
+
+
+func _cal_make_tile(day: int) -> Dictionary:
+        var p := Panel.new()
+        p.custom_minimum_size = Vector2(112, 0)
+        p.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        var sb := StyleBoxFlat.new()
+        sb.bg_color = Color(0.07, 0.10, 0.055, 0.9)
+        sb.set_corner_radius_all(10)
+        sb.set_border_width_all(2)
+        sb.border_color = BunkerUI.STEEL_EDGE
+        p.add_theme_stylebox_override("panel", sb)
+        var vv := VBoxContainer.new()
+        vv.set_anchors_preset(Control.PRESET_FULL_RECT)
+        vv.offset_left = 6.0
+        vv.offset_right = -6.0
+        vv.offset_top = 8.0
+        vv.offset_bottom = -8.0
+        vv.add_theme_constant_override("separation", 4)
+        p.add_child(vv)
+        var dl := BunkerUI.make_mono_label(Loc.t("cal.day", {"n": day}), 11, BunkerUI.TEXT_DIM)
+        dl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+        vv.add_child(dl)
+        var gl := Label.new()
+        gl.add_theme_font_override("font", BunkerUI.font_title())
+        gl.add_theme_font_size_override("font_size", 26)
+        gl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+        gl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+        gl.size_flags_vertical = Control.SIZE_EXPAND_FILL
+        vv.add_child(gl)
+        var rl := Label.new()
+        rl.add_theme_font_override("font", BunkerUI.font_body())
+        rl.add_theme_font_size_override("font_size", 12)
+        rl.add_theme_color_override("font_color", BunkerUI.TEXT_LIGHT)
+        rl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+        rl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+        rl.custom_minimum_size = Vector2(0, 46)
+        vv.add_child(rl)
+        var sl := BunkerUI.make_mono_label("", 10, BunkerUI.TEXT_FAINT)
+        sl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+        vv.add_child(sl)
+        return {"panel": p, "glyph": gl, "reward": rl, "state": sl, "sb": sb, "day": day}
+
+
+func _cal_reward_text(rew: Dictionary) -> String:
+        if int(rew.get("super", 0)) > 0:
+                return Loc.t("cal.r_super")
+        if int(rew.get("mut", 0)) > 0:
+                return Loc.t("cal.r_mut", {"n": int(rew["mut"])})
+        if int(rew.get("ano", 0)) > 0:
+                return Loc.t("cal.r_ano", {"n": int(rew["ano"])})
+        return Loc.t("cal.r_bio", {"n": int(rew.get("bio", 0))})
+
+
+func _cal_refresh() -> void:
+        var info: Dictionary = Prog.calendar_info()
+        var shown := int(info["cycle_claimed"])
+        var done_cycle := bool(info["done_cycle"])
+        var avail := bool(info["available"])
+        var next_day := int(info["next_day"])
+        _cal_today_tile_ref = {}
+        for i in range(1, 8):
+                var t: Dictionary = _cal_tiles[i - 1]
+                var sb: StyleBoxFlat = t["sb"]
+                var rew: Dictionary = Prog.CALENDAR_REWARDS[i - 1]
+                (t["reward"] as Label).text = _cal_reward_text(rew)
+                if done_cycle or i <= shown:
+                        (t["glyph"] as Label).text = "✓"
+                        (t["glyph"] as Label).add_theme_color_override("font_color", BunkerUI.GREEN)
+                        (t["state"] as Label).text = Loc.t("cal.claimed")
+                        (t["state"] as Label).add_theme_color_override("font_color", BunkerUI.GREEN)
+                        sb.bg_color = Color(0.05, 0.075, 0.04, 0.85)
+                        sb.border_color = Color(BunkerUI.GREEN, 0.35)
+                elif i == next_day and avail:
+                        (t["glyph"] as Label).text = "◆"
+                        (t["glyph"] as Label).add_theme_color_override("font_color", BunkerUI.HAZARD_BRIGHT)
+                        (t["state"] as Label).text = Loc.t("cal.today")
+                        (t["state"] as Label).add_theme_color_override("font_color", BunkerUI.HAZARD_BRIGHT)
+                        sb.bg_color = Color(0.09, 0.12, 0.06, 0.95)
+                        sb.border_color = BunkerUI.HAZARD_BRIGHT
+                        _cal_today_tile_ref = t
+                else:
+                        (t["glyph"] as Label).text = "·"
+                        (t["glyph"] as Label).add_theme_color_override("font_color", BunkerUI.TEXT_FAINT)
+                        (t["state"] as Label).text = Loc.t("cal.locked")
+                        (t["state"] as Label).add_theme_color_override("font_color", BunkerUI.TEXT_FAINT)
+                        sb.bg_color = Color(0.05, 0.07, 0.045, 0.75)
+                        sb.border_color = BunkerUI.STEEL_EDGE
+        if done_cycle:
+                _cal_sub.text = Loc.t("cal.sub_done", {"cycles": int(info["cycles"])})
+        else:
+                _cal_sub.text = Loc.t("cal.sub", {"day": next_day})
+        _cal_claim_btn.visible = avail
+
+
+func _cal_claim() -> void:
+        var res: Dictionary = Prog.claim_calendar()
+        if res.is_empty():
+                return
+        _play_click_sound()
+        var rew: Dictionary = res["reward"]
+        _show_message(Loc.t("cal.done_msg", {"day": int(res["day"]), "what": _cal_reward_text(rew)}), 2.4)
+        _cal_refresh()
+        _tw_refresh()
+
+
+func _cal_open() -> void:
+        _play_click_sound()
+        _cal_refresh()
+        _cal_root.visible = true
+
+
+func _cal_close() -> void:
+        _cal_root.visible = false
+
+
+## Раз в день показывать календарь сами (награда ждёт)
+func _maybe_calendar_popup() -> void:
+        if Prog.calendar_popup_needed():
+                Prog.calendar_popup_mark()
+                _cal_open()

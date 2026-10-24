@@ -83,17 +83,22 @@ func _ready() -> void:
         _build_toast()
         _build_name_dialog()
         _build_avatar_dlg()
+        _build_dossier()
+        _build_medals_panel()
 
         _refresh_all()
         Loc.changed.connect(_refresh_all)
+        Prog.medals_changed.connect(_refresh_medal_dot)
+        _refresh_medal_dot()
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
         # анимация эффектов рамок в ленте (перерисовываются только нужные бейджи)
         for id_v in _anim_fr_ids:
                 var b = _fr_badges.get(str(id_v))
                 if b:
                         b.queue_redraw()
+        _prof_pulse(delta)
 
 
 func _input(event: InputEvent) -> void:
@@ -165,6 +170,41 @@ func _build_header() -> void:
         var spacer := Control.new()
         spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
         head.add_child(spacer)
+
+        # ДЕЛО и МЕДАЛИ (v0.26.0)
+        var doss_btn := Button.new()
+        doss_btn.text = Loc.t("dossier.open")
+        doss_btn.custom_minimum_size = Vector2(150, 56)
+        BunkerUI.style_button(doss_btn, "steel", 16)
+        doss_btn.pressed.connect(_dossier_open)
+        doss_btn.mouse_entered.connect(_play_hover_sound)
+        head.add_child(doss_btn)
+
+        var med_btn := Button.new()
+        med_btn.text = Loc.t("medals.open")
+        med_btn.custom_minimum_size = Vector2(150, 56)
+        BunkerUI.style_button(med_btn, "steel", 16)
+        med_btn.pressed.connect(_medals_open)
+        med_btn.mouse_entered.connect(_play_hover_sound)
+        head.add_child(med_btn)
+        _medal_btn = med_btn
+        var mdot := Panel.new()
+        mdot.anchor_left = 1.0
+        mdot.anchor_right = 1.0
+        mdot.offset_left = -22.0
+        mdot.offset_right = -6.0
+        mdot.offset_top = -6.0
+        mdot.offset_bottom = 10.0
+        var msb := StyleBoxFlat.new()
+        msb.bg_color = BunkerUI.HAZARD_BRIGHT
+        msb.set_corner_radius_all(8)
+        msb.border_color = Color(0, 0, 0, 0.6)
+        msb.set_border_width_all(2)
+        mdot.add_theme_stylebox_override("panel", msb)
+        mdot.pivot_offset = Vector2(8, 8)
+        mdot.visible = false
+        med_btn.add_child(mdot)
+        _medal_btn_dot = mdot
 
         var back := Button.new()
         back.text = Loc.t("profile.back")
@@ -1835,3 +1875,416 @@ func _refresh_prog_plate(lvl: int = 0, xp: int = 0, need: int = 0) -> void:
         bar.value = xp
         if sub:
                 sub.text = "опыт %d / %d" % [xp, need]
+
+
+# ==================== ДЕЛО СТАЛКЕРА + МЕДАЛИ ЗОНЫ (v0.26.0) ====================
+
+var _dossier_root: Control = null
+var _dossier_rows: Array = []
+var _medals_root: Control = null
+var _medals_grid: GridContainer = null
+var _medals_head_count: Label = null
+var _medal_tiles: Array = []
+var _medal_btn: Button = null
+var _medal_btn_dot: Panel = null
+var _prof_pulse_t := 0.0
+
+
+func _build_dossier() -> void:
+        _dossier_root = Control.new()
+        _dossier_root.name = "DossierPopup"
+        _dossier_root.set_anchors_preset(Control.PRESET_FULL_RECT)
+        _dossier_root.mouse_filter = Control.MOUSE_FILTER_STOP
+        _dossier_root.visible = false
+        add_child(_dossier_root)
+
+        var dim := ColorRect.new()
+        dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+        dim.color = Color(0, 0, 0, 0.78)
+        dim.mouse_filter = Control.MOUSE_FILTER_STOP
+        dim.gui_input.connect(func(ev: InputEvent):
+                if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
+                        _dossier_close())
+        _dossier_root.add_child(dim)
+
+        var panel := Panel.new()
+        panel.anchor_left = 0.5
+        panel.anchor_right = 0.5
+        panel.anchor_top = 0.5
+        panel.anchor_bottom = 0.5
+        panel.offset_left = -470.0
+        panel.offset_right = 470.0
+        panel.offset_top = -330.0
+        panel.offset_bottom = 330.0
+        var sb := StyleBoxFlat.new()
+        sb.bg_color = Color(0.031, 0.045, 0.026, 0.995)
+        sb.border_color = BunkerUI.GREEN
+        sb.set_border_width_all(2)
+        sb.set_corner_radius_all(12)
+        sb.shadow_color = Color(0, 0, 0, 0.55)
+        sb.shadow_size = 22
+        panel.add_theme_stylebox_override("panel", sb)
+        _dossier_root.add_child(panel)
+
+        var marg := MarginContainer.new()
+        marg.set_anchors_preset(Control.PRESET_FULL_RECT)
+        marg.add_theme_constant_override("margin_left", 22)
+        marg.add_theme_constant_override("margin_right", 22)
+        marg.add_theme_constant_override("margin_top", 14)
+        marg.add_theme_constant_override("margin_bottom", 14)
+        panel.add_child(marg)
+        var v := VBoxContainer.new()
+        v.add_theme_constant_override("separation", 8)
+        marg.add_child(v)
+
+        var title := Label.new()
+        title.text = Loc.t("dossier.title")
+        title.add_theme_font_override("font", BunkerUI.font_title())
+        title.add_theme_font_size_override("font_size", 26)
+        title.add_theme_color_override("font_color", BunkerUI.GREEN)
+        title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+        v.add_child(title)
+        var sub := BunkerUI.make_mono_label(Loc.t("dossier.sub"), 12, BunkerUI.TEXT_DIM)
+        sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+        v.add_child(sub)
+
+        var sc := ScrollContainer.new()
+        sc.size_flags_vertical = Control.SIZE_EXPAND_FILL
+        sc.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+        v.add_child(sc)
+        var box := VBoxContainer.new()
+        box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        box.add_theme_constant_override("separation", 4)
+        sc.add_child(box)
+        for key in ["runs", "wins", "losses", "kills", "artifacts", "anoms", "mutants",
+                                "best_wave", "bio_earned", "bio_spent", "tower", "campaign",
+                                "collection", "arena", "level", "sp"]:
+                var row := HBoxContainer.new()
+                row.add_theme_constant_override("separation", 12)
+                box.add_child(row)
+                var kl := BunkerUI.make_mono_label(Loc.t("dossier." + key), 14, BunkerUI.TEXT_DIM)
+                kl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+                row.add_child(kl)
+                var vl := BunkerUI.make_mono_label("—", 14, BunkerUI.TEXT_LIGHT)
+                vl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+                row.add_child(vl)
+                var ln := ColorRect.new()
+                ln.custom_minimum_size = Vector2(0, 1)
+                ln.color = Color(BunkerUI.STEEL_EDGE, 0.5)
+                box.add_child(ln)
+                _dossier_rows.append({"key": key, "val": vl})
+
+        var btns := HBoxContainer.new()
+        btns.alignment = BoxContainer.ALIGNMENT_CENTER
+        v.add_child(btns)
+        var cb := Button.new()
+        cb.text = Loc.t("cal.close")
+        cb.custom_minimum_size = Vector2(200, 52)
+        BunkerUI.style_button(cb, "steel", 16)
+        cb.pressed.connect(_dossier_close)
+        btns.add_child(cb)
+
+
+func _dossier_refresh() -> void:
+        var s = _save
+        var stats = null
+        if s != null and s.statistics != null:
+                stats = s.statistics
+        var lab = null
+        if _gm and _gm.has_method("get_lab_data"):
+                lab = _gm.get_lab_data()
+        var runs := Prog.count("runs")
+        var wins := Prog.count("wins")
+        var vals := {
+                "runs": str(runs),
+                "wins": str(wins),
+                "losses": str(maxi(0, runs - wins)),
+                "kills": str(Prog.count("kills")),
+                "artifacts": str(Prog.count("artifacts")),
+                "anoms": str(int(stats.anomalies_created)) if stats != null else "0",
+                "mutants": str(int(stats.mutants_created)) if stats != null else "0",
+                "best_wave": str(int(stats.best_survival_wave)) if stats != null else "0",
+                "bio_earned": "%d" % int(stats.biomass_earned) if stats != null else "0",
+                "bio_spent": "%d" % int(stats.biomass_spent) if stats != null else "0",
+                "tower": str(int(s.tower_floor)) if s != null else "0",
+                "campaign": str(int(s.campaign_level)) if s != null else "1",
+                "collection": "%d / 34" % Prog._collection_count(),
+                "arena": "%d / %d" % [
+                        int(lab.arena_wins_challenge) if lab != null else 0,
+                        int(lab.arena_wins_defense) if lab != null else 0],
+                "level": "%d (%d)" % [Prog.level(), Prog.xp_total()],
+                "sp": str(int(lab.season_points)) if lab != null else "0",
+        }
+        for r in _dossier_rows:
+                (r["val"] as Label).text = str(vals.get(r["key"], "—"))
+
+
+func _dossier_open() -> void:
+        _play_click_sound()
+        _dossier_refresh()
+        _dossier_root.visible = true
+
+
+func _dossier_close() -> void:
+        _dossier_root.visible = false
+
+
+# ---------- МЕДАЛИ ЗОНЫ ----------
+
+func _build_medals_panel() -> void:
+        _medals_root = Control.new()
+        _medals_root.name = "MedalsPopup"
+        _medals_root.set_anchors_preset(Control.PRESET_FULL_RECT)
+        _medals_root.mouse_filter = Control.MOUSE_FILTER_STOP
+        _medals_root.visible = false
+        add_child(_medals_root)
+
+        var dim := ColorRect.new()
+        dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+        dim.color = Color(0, 0, 0, 0.78)
+        dim.mouse_filter = Control.MOUSE_FILTER_STOP
+        dim.gui_input.connect(func(ev: InputEvent):
+                if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
+                        _medals_close())
+        _medals_root.add_child(dim)
+
+        var panel := Panel.new()
+        panel.anchor_left = 0.5
+        panel.anchor_right = 0.5
+        panel.anchor_top = 0.5
+        panel.anchor_bottom = 0.5
+        panel.offset_left = -495.0
+        panel.offset_right = 495.0
+        panel.offset_top = -340.0
+        panel.offset_bottom = 340.0
+        var sb := StyleBoxFlat.new()
+        sb.bg_color = Color(0.031, 0.045, 0.026, 0.995)
+        sb.border_color = BunkerUI.GREEN
+        sb.set_border_width_all(2)
+        sb.set_corner_radius_all(12)
+        sb.shadow_color = Color(0, 0, 0, 0.55)
+        sb.shadow_size = 22
+        panel.add_theme_stylebox_override("panel", sb)
+        _medals_root.add_child(panel)
+
+        var marg := MarginContainer.new()
+        marg.set_anchors_preset(Control.PRESET_FULL_RECT)
+        marg.add_theme_constant_override("margin_left", 22)
+        marg.add_theme_constant_override("margin_right", 22)
+        marg.add_theme_constant_override("margin_top", 14)
+        marg.add_theme_constant_override("margin_bottom", 14)
+        panel.add_child(marg)
+        var v := VBoxContainer.new()
+        v.add_theme_constant_override("separation", 8)
+        marg.add_child(v)
+
+        var head := HBoxContainer.new()
+        head.add_theme_constant_override("separation", 12)
+        v.add_child(head)
+        var title := Label.new()
+        title.text = Loc.t("medals.title")
+        title.add_theme_font_override("font", BunkerUI.font_title())
+        title.add_theme_font_size_override("font_size", 26)
+        title.add_theme_color_override("font_color", BunkerUI.GREEN)
+        head.add_child(title)
+        var hsp := Control.new()
+        hsp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        head.add_child(hsp)
+        _medals_head_count = BunkerUI.make_mono_label("", 14, BunkerUI.HAZARD_BRIGHT)
+        head.add_child(_medals_head_count)
+
+        var sub := BunkerUI.make_mono_label(Loc.t("medals.sub"), 12, BunkerUI.TEXT_DIM)
+        v.add_child(sub)
+
+        var sc := ScrollContainer.new()
+        sc.size_flags_vertical = Control.SIZE_EXPAND_FILL
+        sc.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+        v.add_child(sc)
+        _medals_grid = GridContainer.new()
+        _medals_grid.columns = 2
+        _medals_grid.add_theme_constant_override("h_separation", 10)
+        _medals_grid.add_theme_constant_override("v_separation", 10)
+        _medals_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        sc.add_child(_medals_grid)
+
+        var btns := HBoxContainer.new()
+        btns.alignment = BoxContainer.ALIGNMENT_CENTER
+        v.add_child(btns)
+        var cb := Button.new()
+        cb.text = Loc.t("cal.close")
+        cb.custom_minimum_size = Vector2(200, 52)
+        BunkerUI.style_button(cb, "steel", 16)
+        cb.pressed.connect(_medals_close)
+        btns.add_child(cb)
+
+
+func _medals_rebuild() -> void:
+        for c in _medals_grid.get_children():
+                c.queue_free()
+        _medal_tiles.clear()
+        var earned := 0
+        for m in MedalsData.MEDALS:
+                var id := str(m["id"])
+                var claimed := Prog.medal_claimed(id)
+                if claimed:
+                        earned += 1
+                var pr := Prog.medal_progress(m)
+                var claimable: bool = (not claimed) and pr.x >= pr.y
+                var tile := _medal_make_tile(m, claimed, claimable, pr)
+                _medals_grid.add_child(tile["panel"])
+                _medal_tiles.append(tile)
+        _medals_head_count.text = Loc.t("medals.count", {"n": earned, "total": MedalsData.MEDALS.size()})
+
+
+func _medal_txt(m: Dictionary, key: String) -> String:
+        return str(m[key + "_en"]) if Loc.lang == "en" else str(m[key + "_ru"])
+
+
+func _medal_make_tile(m: Dictionary, claimed: bool, claimable: bool, pr: Vector2i) -> Dictionary:
+        var p := PanelContainer.new()
+        p.custom_minimum_size = Vector2(0, 112)
+        var sb := StyleBoxFlat.new()
+        sb.bg_color = Color(0.07, 0.10, 0.055, 0.9)
+        sb.set_corner_radius_all(10)
+        sb.set_border_width_all(2)
+        sb.content_margin_left = 12.0
+        sb.content_margin_right = 12.0
+        sb.content_margin_top = 8.0
+        sb.content_margin_bottom = 8.0
+        if claimed:
+                sb.border_color = Color(BunkerUI.GREEN, 0.5)
+                sb.bg_color = Color(0.05, 0.075, 0.04, 0.85)
+        elif claimable:
+                sb.border_color = BunkerUI.HAZARD_BRIGHT
+        else:
+                sb.border_color = BunkerUI.STEEL_EDGE
+        p.add_theme_stylebox_override("panel", sb)
+        var h := HBoxContainer.new()
+        h.add_theme_constant_override("separation", 12)
+        p.add_child(h)
+
+        var icon := Label.new()
+        icon.text = str(m["icon"])
+        icon.add_theme_font_override("font", BunkerUI.font_title())
+        icon.add_theme_font_size_override("font_size", 28)
+        icon.custom_minimum_size = Vector2(64, 0)
+        icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+        icon.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+        if claimed:
+                icon.add_theme_color_override("font_color", BunkerUI.GREEN)
+        elif claimable:
+                icon.add_theme_color_override("font_color", BunkerUI.HAZARD_BRIGHT)
+        else:
+                icon.add_theme_color_override("font_color", BunkerUI.TEXT_FAINT)
+        h.add_child(icon)
+
+        var vv := VBoxContainer.new()
+        vv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        vv.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+        vv.add_theme_constant_override("separation", 3)
+        h.add_child(vv)
+
+        var ttl := Label.new()
+        ttl.text = _medal_txt(m, "t")
+        ttl.add_theme_font_override("font", BunkerUI.font_title())
+        ttl.add_theme_font_size_override("font_size", 15)
+        ttl.add_theme_color_override("font_color",
+                BunkerUI.TEXT_LIGHT if not claimed else BunkerUI.GREEN)
+        vv.add_child(ttl)
+
+        var desc := BunkerUI.make_mono_label(_medal_txt(m, "d"), 12, BunkerUI.TEXT_DIM)
+        desc.clip_text = true
+        vv.add_child(desc)
+
+        var brow := HBoxContainer.new()
+        brow.add_theme_constant_override("separation", 8)
+        vv.add_child(brow)
+
+        var bar := ProgressBar.new()
+        bar.custom_minimum_size = Vector2(0, 10)
+        bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+        bar.show_percentage = false
+        bar.max_value = maxi(1, pr.y)
+        bar.value = float(pr.x)
+        if claimed:
+                bar.value = float(pr.y)
+        var bg_sb := StyleBoxFlat.new()
+        bg_sb.bg_color = Color(0.05, 0.08, 0.05)
+        bg_sb.set_corner_radius_all(4)
+        bar.add_theme_stylebox_override("background", bg_sb)
+        var fill_sb := StyleBoxFlat.new()
+        fill_sb.bg_color = BunkerUI.GREEN if (claimed or claimable) else BunkerUI.STEEL_EDGE
+        fill_sb.set_corner_radius_all(4)
+        bar.add_theme_stylebox_override("fill", fill_sb)
+        brow.add_child(bar)
+
+        var status := "locked"
+        if claimed:
+                status = "claimed"
+                var sl := BunkerUI.make_mono_label(Loc.t("medals.done"), 12, BunkerUI.GREEN)
+                brow.add_child(sl)
+        elif claimable:
+                status = "claimable"
+                var btn := Button.new()
+                btn.text = Loc.t("medals.claim")
+                btn.custom_minimum_size = Vector2(116, 32)
+                BunkerUI.style_button(btn, "primary", 12)
+                btn.pressed.connect(func(): _medal_claim(str(m["id"])))
+                brow.add_child(btn)
+        else:
+                var sl2 := BunkerUI.make_mono_label(Loc.t("medals.locked", {"cur": pr.x, "need": pr.y}), 12, BunkerUI.TEXT_FAINT)
+                brow.add_child(sl2)
+
+        return {"panel": p, "sb": sb, "state": status}
+
+
+func _medal_reward_text(rew: Dictionary) -> String:
+        if int(rew.get("sp", 0)) > 0:
+                return Loc.t("medals.r_sp", {"n": int(rew["sp"])})
+        if int(rew.get("mut", 0)) > 0:
+                return Loc.t("cal.r_mut", {"n": int(rew["mut"])})
+        if int(rew.get("ano", 0)) > 0:
+                return Loc.t("cal.r_ano", {"n": int(rew["ano"])})
+        return Loc.t("cal.r_bio", {"n": int(rew.get("bio", 0))})
+
+
+func _medal_claim(id: String) -> void:
+        var res := Prog.claim_medal(id)
+        if res.is_empty():
+                return
+        _play_click_sound()
+        _show_toast(Loc.t("medals.done_msg", {"title": str(res["title"]), "what": _medal_reward_text(res["reward"])}))
+        _medals_rebuild()
+        _refresh_medal_dot()
+
+
+func _medals_open() -> void:
+        _play_click_sound()
+        _medals_rebuild()
+        _medals_root.visible = true
+
+
+func _medals_close() -> void:
+        _medals_root.visible = false
+
+
+func _refresh_medal_dot() -> void:
+        if _medal_btn_dot == null:
+                return
+        _medal_btn_dot.visible = Prog.medals_claimable_count() > 0
+
+
+func _prof_pulse(delta: float) -> void:
+        _prof_pulse_t += delta
+        if _medal_btn_dot != null and _medal_btn_dot.visible:
+                var s := 1.0 + 0.25 * sin(_prof_pulse_t * 5.2)
+                _medal_btn_dot.scale = Vector2(s, s)
+        if _medals_root != null and _medals_root.visible:
+                for t_v in _medal_tiles:
+                        var t: Dictionary = t_v
+                        if str(t["state"]) == "claimable":
+                                var pn: PanelContainer = t["panel"]
+                                pn.self_modulate = Color(1, 1, 1, 0.82 + 0.18 * (0.5 + 0.5 * sin(_prof_pulse_t * 4.0)))

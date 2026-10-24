@@ -444,6 +444,68 @@ const STRINGS := {
         "profile.show_night_monolith": {"ru": "башня", "en": "tower"},
         "profile.st_sleeping": {"ru": "СПИТ В СПАЛЬНИКЕ", "en": "SLEEPING IN THE DORM"},
         "profile.show_sleeping": {"ru": "5 дней в Зоне", "en": "5 days in the Zone"},
+        # ==== Виджет задач на главном экране лабы (v0.26.0) ====
+        "tw.tab": {"ru": "ЗАДАЧИ", "en": "TASKS"},
+        "tw.head": {"ru": "ЗАДАЧИ ЗОНЫ", "en": "ZONE TASKS"},
+        "tw.today": {"ru": "Дневные", "en": "Daily"},
+        "tw.week": {"ru": "Недельные закрыто: {done} / {total}", "en": "Weekly done: {done} / {total}"},
+        "tw.track_ready": {"ru": "Сундуки готовы: {n} — открыть трек", "en": "Chests ready: {n} - open track"},
+        "tw.track_next": {"ru": "До сундука {n}: {pts} / {need} очков", "en": "To chest {n}: {pts} / {need} points"},
+        "tw.claim": {"ru": "ЗАБРАТЬ", "en": "CLAIM"},
+        "tw.claimed": {"ru": "ЗАКРЫТО", "en": "DONE"},
+        "tw.progress": {"ru": "{cur} / {need}", "en": "{cur} / {need}"},
+        "tw.reward": {"ru": "+{xp}оп · +{pts}оч", "en": "+{xp}xp · +{pts}pts"},
+        "cal.note": {"ru": "День 7 приносит СУПЕР-КРУТКУ · пропустишь день — серия сгорит", "en": "Day 7 brings a SUPER ROLL · miss a day and the streak burns"},
+        "tw.calendar": {"ru": "КАЛЕНДАРЬ ВХОДА", "en": "LOGIN CALENDAR"},
+        "tw.close": {"ru": "✕", "en": "✕"},
+
+        # ==== Календарь входа ====
+        "cal.title": {"ru": "КАЛЕНДАРЬ ВХОДА", "en": "LOGIN CALENDAR"},
+        "cal.sub": {"ru": "День {day} из 7 · заходи каждый день — серия сгорает за пропуск", "en": "Day {day} of 7 · come daily - miss a day and the streak burns"},
+        "cal.sub_done": {"ru": "Цикл закрыт! Завтра начнётся новый · закрыто циклов: {cycles}", "en": "Cycle complete! A new one starts tomorrow · cycles done: {cycles}"},
+        "cal.day": {"ru": "ДЕНЬ {n}", "en": "DAY {n}"},
+        "cal.today": {"ru": "СЕГОДНЯ", "en": "TODAY"},
+        "cal.claimed": {"ru": "ЗАБРАНО", "en": "CLAIMED"},
+        "cal.locked": {"ru": "ЗАКРЫТ", "en": "LOCKED"},
+        "cal.claim": {"ru": "ЗАБРАТЬ НАГРАДУ", "en": "CLAIM REWARD"},
+        "cal.tomorrow": {"ru": "НАГРАДА ЗАВТРА", "en": "TOMORROW'S REWARD"},
+        "cal.close": {"ru": "ЗАКРЫТЬ", "en": "CLOSE"},
+        "cal.r_bio": {"ru": "Биомасса {n}", "en": "Biomass {n}"},
+        "cal.r_mut": {"ru": "Крутки мутантов ×{n}", "en": "Mutant rolls ×{n}"},
+        "cal.r_ano": {"ru": "Крутки аномалий ×{n}", "en": "Anomaly rolls ×{n}"},
+        "cal.r_super": {"ru": "СУПЕР-КРУТКА", "en": "SUPER ROLL"},
+        "cal.done_msg": {"ru": "КАЛЕНДАРЬ ДЕНЬ {day}: {what}", "en": "CALENDAR DAY {day}: {what}"},
+
+        # ==== Дело сталкера (профиль) ====
+        "dossier.open": {"ru": "ДЕЛО", "en": "DOSSIER"},
+        "dossier.title": {"ru": "ДЕЛО СТАЛКЕРА", "en": "STALKER DOSSIER"},
+        "dossier.sub": {"ru": "личное дело · статистика по Зоне", "en": "personal file · Zone statistics"},
+        "dossier.runs": {"ru": "Забегов проведено", "en": "Runs completed"},
+        "dossier.wins": {"ru": "Побед", "en": "Victories"},
+        "dossier.losses": {"ru": "Провалов", "en": "Failures"},
+        "dossier.kills": {"ru": "Сталкеров уничтожено", "en": "Stalkers destroyed"},
+        "dossier.artifacts": {"ru": "Артефактов утащено в лабу", "en": "Artifacts dragged to the lab"},
+        "dossier.anoms": {"ru": "Аномалий создано", "en": "Anomalies created"},
+        "dossier.mutants": {"ru": "Мутантов выращено", "en": "Mutants bred"},
+        "dossier.best_wave": {"ru": "Рекорд волн выживания", "en": "Survival wave record"},
+        "dossier.bio_earned": {"ru": "Биомассы заработано", "en": "Biomass earned"},
+        "dossier.bio_spent": {"ru": "Биомассы потрачено", "en": "Biomass spent"},
+        "dossier.tower": {"ru": "Башня Монолита: этаж", "en": "Monolith Tower: floor"},
+        "dossier.campaign": {"ru": "Кампания: уровень", "en": "Campaign: level"},
+        "dossier.collection": {"ru": "Коллекция галереи", "en": "Gallery collection"},
+        "dossier.arena": {"ru": "Арена: вызовы / обороны", "en": "Arena: challenges / defenses"},
+        "dossier.level": {"ru": "Уровень лаборанта (всего опыта)", "en": "Lab level (total XP)"},
+        "dossier.sp": {"ru": "Очки сезона сейчас", "en": "Season points now"},
+
+        # ==== Медали Зоны (профиль) ====
+        "medals.open": {"ru": "МЕДАЛИ", "en": "MEDALS"},
+        "medals.title": {"ru": "МЕДАЛИ ЗОНЫ", "en": "ZONE MEDALS"},
+        "medals.sub": {"ru": "награды за вехи · счётчики растут всю жизнь", "en": "milestone rewards · counters grow for life"},
+        "medals.count": {"ru": "Заслужено: {n} / {total}", "en": "Earned: {n} / {total}"},
+        "medals.claim": {"ru": "ЗАБРАТЬ", "en": "CLAIM"},
+        "medals.done": {"ru": "ЗАБРАТО", "en": "EARNED"},
+        "medals.locked": {"ru": "{cur} / {need}", "en": "{cur} / {need}"},
+        "medals.r_sp": {"ru": "Очки сезона +{n}", "en": "Season points +{n}"},
 }
 
 # Имена типов коллекции: ru - из GachaData.DISPLAY_NAMES, en - из DISPLAY_NAMES_EN
@@ -461,8 +523,7 @@ const DISPLAY_NAMES_EN := {
         "clock_artifact": "Clock", "hourglass_artifact": "Hourglass",
         "graviton_artifact": "Graviton", "fireball_artifact": "Fireball",
         "jumper_artifact": "Jumper", "flesh_artifact": "Living flesh",
-        "void_artifact": "Void", "heart_artifact": "Heart of the Lake",
-        "storm_artifact": "Storm", "uranium_artifact": "Uranium",
+        "medals.done_msg": {"ru": "МЕДАЛЬ «{title}»: {what}", "en": "MEDAL «{title}»: {what}"},
 }
 
 

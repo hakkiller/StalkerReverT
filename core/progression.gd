@@ -443,12 +443,16 @@ func on_run_result(result: Dictionary) -> void:
                 arts = (result["artifacts_collected"] as Array).size()
 
         _bump("runs", 1)
+        _count("runs", 1)
         if success:
                 _bump("wins", 1)
+                _count("wins", 1)
         if kills > 0:
                 _bump("kills", kills)
+                _count("kills", kills)
         if arts > 0:
                 _bump("artifacts", arts)
+                _count("artifacts", arts)
 
         var xp := 0
         var pts := 1
@@ -470,11 +474,13 @@ func on_run_result(result: Dictionary) -> void:
                         if kind_val != null and not str(kind_val).is_empty():
                                 if success:
                                         _bump("arena_wins", 1)
+                                        _count("arena_wins", 1)
                                         xp += 50
                                         pts += 3
                 "tower":
                         if success:
                                 _bump("tower_wins", 1)
+                                _count("tower_wins", 1)
                                 xp += 70 + 3 * int(result.get("tower_floor", 1))
                                 pts += 2
                         else:
@@ -482,6 +488,7 @@ func on_run_result(result: Dictionary) -> void:
                 _:
                         if success:
                                 _bump("campaign_wins", 1)
+                                _count("campaign_wins", 1)
                                 xp += 60 + 2 * int(result.get("campaign_level", 1))
                                 if is_replay:
                                         xp = 25
@@ -499,6 +506,7 @@ func on_run_result(result: Dictionary) -> void:
 func notify_gacha(times: int) -> void:
         var n := clampi(times, 1, 10)
         _bump("gacha", n)
+        _count("gacha", n)
         add_xp(2 * n, "gacha")
 
 
@@ -565,3 +573,272 @@ func request_story(context: String, host: Node) -> void:
         box.closed.connect(func() -> void: _story_box = null)
         host.get_tree().root.add_child(box)
         box.show_dialogue(story["lines"])
+
+
+# ==================== ПОЖИЗНЕННЫЕ СЧЁТЧИКИ (медали) ====================
+
+## Источник правды для медалей. При первом доступе засеивается из
+## statistics/арены — ветераны получают зачёт прошлых заслуг.
+
+func _counts() -> Dictionary:
+        var s = _save()
+        if s == null:
+                if not _mem.has("counts"):
+                        _mem["counts"] = {}
+                _seed_counts(_mem["counts"])
+                return _mem["counts"]
+        if s.prog_counts == null:
+                s.prog_counts = {}
+        _seed_counts(s.prog_counts)
+        return s.prog_counts
+
+
+func _seed_counts(c: Dictionary) -> void:
+        if bool(c.get("seeded", false)):
+                return
+        var gm = _gm()
+        var lab = null
+        if gm and gm.has_method("get_lab_data"):
+                lab = gm.get_lab_data()
+        if gm and gm.has_method("get_current_save_data"):
+                var s = gm.get_current_save_data()
+                if s and s.statistics != null:
+                        c["runs"] = int(c.get("runs", 0)) + int(s.statistics.total_runs)
+                        c["wins"] = int(c.get("wins", 0)) + int(s.statistics.wins)
+                        c["kills"] = int(c.get("kills", 0)) + int(s.statistics.stalkers_killed)
+                        c["artifacts"] = int(c.get("artifacts", 0)) + int(s.statistics.artifacts_stolen)
+                if s != null and lab != null:
+                        c["arena_wins"] = int(c.get("arena_wins", 0)) \
+                                        + int(lab.arena_wins_challenge) + int(lab.arena_wins_defense)
+        c["seeded"] = true
+
+
+func count(key: String) -> int:
+        return int(_counts().get(key, 0))
+
+
+func _count(key: String, amount: int) -> void:
+        if amount <= 0:
+                return
+        var c := _counts()
+        c[key] = int(c.get(key, 0)) + amount
+
+
+# ==================== КАЛЕНДАРЬ ВХОДА (7 дней, цикл) ====================
+
+signal calendar_changed
+
+const CALENDAR_REWARDS: Array = [
+        {"bio": 500}, {"bio": 1200}, {"mut": 1}, {"bio": 2500},
+        {"ano": 2}, {"bio": 5000}, {"super": 1},
+]
+
+
+func _calendar() -> Dictionary:
+        var s = _save()
+        if s == null:
+                if not _mem.has("cal"):
+                        _mem["cal"] = {"last": "", "claimed": 0, "cycles": 0, "popup": ""}
+                return _mem["cal"]
+        if s.prog_calendar == null:
+                s.prog_calendar = {"last": "", "claimed": 0, "cycles": 0, "popup": ""}
+        return s.prog_calendar
+
+
+func _cal_today() -> String:
+        return Time.get_date_string_from_system()
+
+
+func _cal_yesterday() -> String:
+        var d := Time.get_date_dict_from_system()
+        var unix := Time.get_unix_time_from_datetime_dict({
+                "year": int(d["year"]), "month": int(d["month"]), "day": int(d["day"]),
+                "hour": 12, "minute": 0, "second": 0,
+        }) - 86400
+        var y := Time.get_datetime_dict_from_unix_time(int(unix))
+        return "%04d-%02d-%02d" % [int(y["year"]), int(y["month"]), int(y["day"])]
+
+
+## {"cycle_claimed": сколько дней закрыто в текущем цикле (с учётом сгоревшей
+## серии), "available": можно забрать сегодня, "next_day": 1..7, "cycles": полных циклов}
+func calendar_info() -> Dictionary:
+        var c := _calendar()
+        var claimed := int(c.get("claimed", 0))
+        var last := str(c.get("last", ""))
+        var today := _cal_today()
+        var available := last != today
+        if available and last != "" and last != _cal_yesterday() and claimed < 7:
+                claimed = 0  # пропущен день — серия сгорела, цикл начнётся заново
+        if claimed >= 7:
+                claimed = 0  # прошлый цикл закрыт — следующий забор откроет новый
+        return {"claimed": int(c.get("claimed", 0)), "cycle_claimed": claimed,
+                        "available": available, "next_day": mini(claimed + 1, 7),
+                        "cycles": int(c.get("cycles", 0)),
+                        "done_cycle": int(c.get("claimed", 0)) >= 7}
+
+
+func claim_calendar() -> Dictionary:
+        var c := _calendar()
+        var today := _cal_today()
+        if str(c.get("last", "")) == today:
+                return {}
+        var claimed := int(c.get("claimed", 0))
+        var last := str(c.get("last", ""))
+        if last != "" and last != _cal_yesterday() and claimed < 7:
+                claimed = 0  # серия сгорела
+        if claimed >= 7:
+                claimed = 0  # новый цикл
+        claimed += 1
+        c["claimed"] = claimed
+        c["last"] = today
+        if claimed >= 7:
+                c["cycles"] = int(c.get("cycles", 0)) + 1
+        var rew: Dictionary = CALENDAR_REWARDS[claimed - 1]
+        _apply_reward(rew, "календарь входа")
+        _persist()
+        calendar_changed.emit()
+        return {"day": claimed, "reward": rew.duplicate()}
+
+
+## Поп-ап календаря показывается один раз в день (при входе в лабу)
+func calendar_popup_needed() -> bool:
+        var c := _calendar()
+        return str(c.get("popup", "")) != _cal_today() and bool(calendar_info()["available"])
+
+
+func calendar_popup_mark() -> void:
+        var c := _calendar()
+        c["popup"] = _cal_today()
+        _persist()
+
+
+# ==================== МЕДАЛИ ЗОНЫ (ачивки) ====================
+
+signal medals_changed
+
+func _medals() -> Dictionary:
+        var s = _save()
+        if s == null:
+                if not _mem.has("med"):
+                        _mem["med"] = {"claimed": {}}
+                return _mem["med"]
+        if s.prog_medals == null or s.prog_medals.is_empty():
+                s.prog_medals = {"claimed": {}}
+        return s.prog_medals
+
+
+func medal_claimed(id: String) -> bool:
+        return bool(_medals()["claimed"].get(id, false))
+
+
+## Прогресс медали: (текущее, цель)
+func medal_progress(md: Dictionary) -> Vector2i:
+        var ct := str(md["cond"]["type"])
+        var need := int(md["cond"]["value"])
+        var cur := 0
+        var s = _save()
+        var gm = _gm()
+        var lab = null
+        if gm and gm.has_method("get_lab_data"):
+                lab = gm.get_lab_data()
+        match ct:
+                "runs", "wins", "kills", "artifacts", "arena_wins", "tower_wins", "campaign_wins", "gacha":
+                        cur = count(ct)
+                "tower_floor":
+                        cur = int(s.tower_floor) if s != null else 0
+                "best_wave":
+                        cur = int(s.statistics.best_survival_wave) if s != null and s.statistics != null else 0
+                "biomass_earned":
+                        cur = int(s.statistics.biomass_earned) if s != null and s.statistics != null else 0
+                "campaign_level":
+                        cur = int(s.campaign_level) if s != null else 0
+                "collection":
+                        cur = _collection_count()
+                "max_star":
+                        if lab != null:
+                                for v in lab.mutant_stars.values():
+                                        cur = maxi(cur, int(v))
+                        cur = mini(cur, 1)
+                "has_chimera":
+                        if lab != null and lab.unlocked_mutants.has("chimera"):
+                                cur = 1
+                "calendar_cycles":
+                        cur = int(_calendar().get("cycles", 0))
+        return Vector2i(mini(cur, need), need)
+
+
+## Собрано видов галереи (мутанты + артефакты, включая эксклюзивы) — как в галерее
+func _collection_count() -> int:
+        var gm = _gm()
+        var lab = null
+        if gm and gm.has_method("get_lab_data"):
+                lab = gm.get_lab_data()
+        if lab == null:
+                return 0
+        var n := 0
+        for rarity in GachaData.MUTANT_POOL:
+                for e in GachaData.MUTANT_POOL[rarity]:
+                        if lab.unlocked_mutants.has(str(e[0])):
+                                n += 1
+        for ex in GachaData.EXCLUSIVE_MUTANTS:
+                if lab.unlocked_mutants.has(str(ex["type"])):
+                        n += 1
+        for rarity in GachaData.ARTIFACT_POOL:
+                for t in GachaData.ARTIFACT_POOL[rarity]:
+                        if lab.won_artifacts.has(str(t)) or lab.exclusive_anomalies.has(str(t)):
+                                n += 1
+        for ax in GachaData.EXCLUSIVE_ANOMALIES:
+                if lab.exclusive_anomalies.has(str(ax["type"])):
+                        n += 1
+        return n
+
+
+func medal_claimable(id: String) -> bool:
+        if medal_claimed(id):
+                return false
+        var md := MedalsData.by_id(id)
+        if md.is_empty():
+                return false
+        var pr := medal_progress(md)
+        return pr.x >= pr.y
+
+
+func medals_claimable_count() -> int:
+        var n := 0
+        for m in MedalsData.MEDALS:
+                if medal_claimable(str(m["id"])):
+                        n += 1
+        return n
+
+
+## Забрать медаль: {} если нельзя, иначе {"reward":…, "title":…}
+func claim_medal(id: String) -> Dictionary:
+        if not medal_claimable(id):
+                return {}
+        var md := MedalsData.by_id(id)
+        _medals()["claimed"][id] = true
+        var rew: Dictionary = md["reward"]
+        _apply_reward(rew, "медаль «%s»" % str(md["t_ru"]))
+        _persist()
+        medals_changed.emit()
+        return {"reward": rew.duplicate(), "title": str(md["t_ru"])}
+
+
+## Общая выдача наград (календарь/медали): bio | mut | ano | sp | super
+func _apply_reward(rew: Dictionary, source: String) -> void:
+        var gm = _gm()
+        if gm == null:
+                return
+        var lab = null
+        if gm.has_method("get_lab_data"):
+                lab = gm.get_lab_data()
+        if int(rew.get("bio", 0)) > 0 and lab != null:
+                lab.biomass += float(int(rew["bio"]))
+        if int(rew.get("mut", 0)) > 0 and gm.has_method("grant_mutant_rolls"):
+                gm.grant_mutant_rolls(int(rew["mut"]), source)
+        if int(rew.get("ano", 0)) > 0 and gm.has_method("grant_anomaly_rolls"):
+                gm.grant_anomaly_rolls(int(rew["ano"]), source)
+        if int(rew.get("sp", 0)) > 0 and lab != null:
+                lab.season_points += int(rew["sp"])
+        if int(rew.get("super", 0)) > 0 and lab != null:
+                lab.super_pulls += int(rew["super"])

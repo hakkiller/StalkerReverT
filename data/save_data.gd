@@ -36,6 +36,13 @@ class_name SaveData
 @export var prog_track: Dictionary = {}
 @export var prog_onboard: Dictionary = {}
 
+# Календарь входа (Prog): {"last": "YYYY-MM-DD", "claimed": 0..7, "cycles": 0, "popup": ""}
+@export var prog_calendar: Dictionary = {}
+# Медали Зоны: {"claimed": {id: true}}
+@export var prog_medals: Dictionary = {}
+# Пожизненные счётчики медалей: {"runs": N, "wins": N, ...}
+@export var prog_counts: Dictionary = {}
+
 
 func _init():
     lab_data = LabData.new()
