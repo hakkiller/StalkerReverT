@@ -12,6 +12,7 @@ signal trader_requested
 @onready var biomass_value: Label = $Resources/BiomassValue
 @onready var wave_label: Label = $Resources/WaveLabel
 @onready var stalker_count_label: Label = $Resources/StalkerCountLabel
+@onready var time_label: Label = $Resources/TimeLabel
 
 @onready var emission_label: Label = $EmissionPanel/EmissionLabel
 @onready var emission_timer_label: Label = $EmissionPanel/EmissionTimerLabel
@@ -789,6 +790,12 @@ func _on_note_expired(desc: String = ""):
 ## Золотое объявление награды (гача/вехи/события) — крупно по центру
 func show_reward_note(text: String):
                 _announce("НАГРАДА", text, Color(1.0, 0.85, 0.2), 2.6)
+
+## Часы суток (v0.29.0): строка в панели ресурсов, цвет и иконка по фазе
+func update_daynight(text: String, icon: String, color: Color) -> void:
+                if time_label:
+                                time_label.text = icon + " " + text
+                                time_label.add_theme_color_override("font_color", color)
 
 # ==================== ТОРГОВЕЦ ЗАБЕГА (v0.28.0) ====================
 

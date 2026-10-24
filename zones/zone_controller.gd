@@ -65,6 +65,9 @@ var _pending_placement: String = ""
 # Поп-апы забега (события Зоны / торговец) - канвас-слой над HUD
 var run_popups: RunPopups
 
+# Цикл дня и ночи (v0.29.0 «СВЕТ И ТЕНЬ»): часы суток, покраска света, бонус ночной добычи
+var day_night_manager: DayNightManager
+
 
 func _ready():
                 pass # print("ZoneController: инициализация...")
@@ -260,6 +263,11 @@ func _setup_managers():
                 add_child(fog_manager)
                 pass # print("FogManager создан")
 
+                # Цикл дня и ночи (v0.29.0): свет/фон/туман по часам суток
+                day_night_manager = DayNightManager.new()
+                add_child(day_night_manager)
+                pass # print("DayNightManager создан")
+
                 # ParticleManager
                 particle_manager = ParticleManager.new()
                 add_child(particle_manager)
@@ -302,6 +310,9 @@ func _connect_managers():
                 anomaly_manager.artifact_created.connect(func(a, t, p): Signals.artifact_created.emit(a, t, p, a.get_value() if a.has_method("get_value") else 0))
                 spawn_manager.stalker_spawned.connect(func(s, t): Signals.stalker_spawned.emit(s, t, s.global_position))
                 spawn_manager.mutant_spawned.connect(func(m, t): Signals.mutant_spawned.emit(m, t, m.global_position, spawn_manager.get_mutant_cost(t)))
+
+                # Цикл дня и ночи: анонс наступления ночи
+                day_night_manager.phase_changed.connect(_on_daynight_phase_changed)
 
 
 func _initialize_run():
@@ -1115,7 +1126,11 @@ func register_stalker(_stalker: Node):
 func on_stalker_died(stalker: Node, biomass_returned: float):
                 if resource_manager:
                                 # ЖАТВА: множитель добычи за убийство (волна легенд x события Зоны)
-                                resource_manager.add_biomass(biomass_returned * _harvest_mult * _event_harvest_mult)
+                                # Ночь (v0.29.0): сталкеры хуже видят - добыча +25%
+                                var night_mult := 1.0
+                                if day_night_manager and day_night_manager.is_night():
+                                                night_mult = DayNightData.NIGHT_HARVEST_MULT
+                                resource_manager.add_biomass(biomass_returned * _harvest_mult * _event_harvest_mult * night_mult)
                                 # (лог отключён)
 
                 progression_manager.record_stalker_killed()
@@ -1352,6 +1367,14 @@ func _trader_buy(item_id: String) -> String:
                 _apply_run_effect(item.get("effect", {}))
                 var ru: bool = Loc.lang == "ru"
                 return Loc.t("trader.bought", {"name": str(item.get("name_ru", "") if ru else item.get("name_en", ""))})
+
+
+# ==================== ЦИКЛ ДНЯ И НОЧИ (v0.29.0) ====================
+
+## Наступление ночи: раз в цикл объявляем бонус добычи
+func _on_daynight_phase_changed(phase: String):
+                if phase == "night" and not is_run_finished:
+                                _note_hud(DayNightData.NIGHT_NOTE)
 
 
 # ==================== ЗАВЕРШЕНИЕ ЗАБЕГА ====================
